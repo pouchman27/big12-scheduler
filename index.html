@@ -26,9 +26,10 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 .tw{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:640px){.divs,.tw{grid-template-columns:1fr}}
 .q .t.e{cursor:pointer;border-radius:6px;padding:5px 8px;margin:2px 0;background:#232c45;touch-action:manipulation}.q .t.e:hover{background:#2c3858}.q .t.sel{background:var(--a);color:#111;font-weight:700}.q h3 .ren{cursor:pointer;text-decoration:underline dotted}.hint{background:var(--card);border:1px dashed var(--a);border-radius:10px;padding:8px 12px;margin:0 0 10px;text-align:center;color:var(--mut)}
+.g b.N{color:var(--mut)}.g i{font-style:normal;color:var(--mut);font-size:12px}.wk.nc{outline:1px dashed #4a5578}
 .note{color:var(--mut);font-size:13px;text-align:center}
 </style></head><body>
-<header><h1>Big 12 Quadrant Scheduler</h1><p>16 teams, 4 quadrants, 2 divisions, one randomized mock season.</p></header>
+<header><h1>Big 12 Quadrant Scheduler</h1><p>16 teams, 4 quadrants, 2 divisions, one randomized 10-game mock season.</p></header>
 <main>
 <div class="bar">
 <button class="p" id="sched">Randomize schedule</button>
@@ -43,7 +44,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <div class="divs" id="divs"></div>
 <h2 class="s">Mock schedule</h2><div id="weeks"></div>
 <div id="stand"></div>
-<p class="note">Weeks 1-7: every team plays its division once, in random order. Week 8: the two divisions face each other. Team list: 2026 Big 12 membership.</p>
+<p class="note">Each team plays 10 games: Week 1 is 1 non-conference game vs a Power 4 opponent (SEC, Big Ten or ACC), Weeks 2-8 are the 7 in-division games (round robin, random order), Week 9 is crossover game 1 and Week 10, the last week, is crossover game 2 (each team faces a different team from the other division both times). Team list: 2026 Big 12 membership.</p>
 </main>
 <script>
 const GEO=[["Mountain & Desert",["Arizona","Arizona State","Utah","BYU"]],
@@ -68,12 +69,18 @@ function rr(teams){ // circle method, shuffled rounds
  let t=shuf(teams),n=t.length,rounds=[];
  for(let r=0;r<n-1;r++){const g=[];for(let i=0;i<n/2;i++)g.push([t[i],t[n-1-i]]);rounds.push(g);t.splice(1,0,t.pop())}
  return shuf(rounds)}
+const P4={"Alabama":"SEC","Georgia":"SEC","Texas":"SEC","Oklahoma":"SEC","LSU":"SEC","Tennessee":"SEC","Florida":"SEC","Auburn":"SEC","Ole Miss":"SEC","Texas A&M":"SEC","Ohio State":"Big Ten","Michigan":"Big Ten","Oregon":"Big Ten","USC":"Big Ten","Penn State":"Big Ten","Washington":"Big Ten","Wisconsin":"Big Ten","Nebraska":"Big Ten","UCLA":"Big Ten","Iowa":"Big Ten","Clemson":"ACC","Miami":"ACC","Florida State":"ACC","NC State":"ACC","Louisville":"ACC","Pitt":"ACC","Virginia Tech":"ACC","SMU":"ACC","Georgia Tech":"ACC","Stanford":"ACC"};
+const oc=t=>t+(P4[t]?"":"");
 function build(){
  const [A,B]=divs(),ra=rr(A),rb=rr(B),weeks=[];
+ const opp=shuf(Object.keys(P4)).slice(0,16);
+ weeks.push({nc:true,games:[...A,...B].map((t,i)=>[t,opp[i]])});
  for(let w=0;w<7;w++)weeks.push({games:[...ra[w],...rb[w]]});
- const b=shuf(B);weeks.push({fin:true,games:shuf(A).map((a,i)=>[a,b[i]])});
+ const b1=shuf(B),b2=b1.slice(1).concat(b1[0]),sa=shuf(A);
+ weeks.push({x:true,games:sa.map((a,i)=>[a,b1[i]])});
+ weeks.push({fin:true,games:sa.map((a,i)=>[a,b2[i]])});
  sched=weeks;scores=null;render()}
-function dv(t){return divs()[0].includes(t)?"A":"B"}
+function dv(t){return P4[t]?"N":divs()[0].includes(t)?"A":"B"}
 function render(){
  $("hint").innerHTML=editing?`<div class="hint">Editing quadrants: tap a team, then tap another team to swap them (or drag one onto another). Tap a quadrant name to rename it. Every quadrant always keeps 4 teams. Changes save automatically.${picked?`<br><b style="color:var(--a)">${picked} selected - now tap the team to swap with.</b>`:""}</div>`:"";
  $("edit").textContent=editing?"Done editing":"Edit quadrants";
@@ -83,13 +90,13 @@ function render(){
  const [A,B]=divs(),nm=names()[pairIdx].split("  vs  ");
  $("divs").innerHTML=[["A",A,nm[0]],["B",B,nm[1]]].map(([k,d,n])=>`<div class="d ${k}"><h2>Division ${k}</h2><small>${n}</small><div style="margin-top:6px">${d.join(", ")}</div></div>`).join("");
  if(!sched)build0();
- $("weeks").innerHTML=sched.map((w,wi)=>`<div class="wk ${w.fin?"fin":""}"><h4>Week ${wi+1}${w.fin?" - Division vs Division finale":""}</h4><div class="g">${w.games.map((g,gi)=>{const s=scores&&scores[wi][gi];return `<span><span><b class="${dv(g[0])}">${g[0]}</b> vs <b class="${dv(g[1])}">${g[1]}</b></span><span class="sc">${s?s[0]+"-"+s[1]:""}</span></span>`}).join("")}</div></div>`).join("");
+ $("weeks").innerHTML=sched.map((w,wi)=>`<div class="wk ${w.fin?"fin":""} ${w.nc?"nc":""}"><h4>Week ${wi+1}${w.nc?" - Non-conference (vs Power 4 opponent)":w.x?" - Crossover game 1 (vs other division)":w.fin?" - Crossover game 2 - Division vs Division finale":" - In-division"}</h4><div class="g">${w.games.map((g,gi)=>{const s=scores&&scores[wi][gi];return `<span><span><b class="${dv(g[0])}">${g[0]}</b> vs <b class="${dv(g[1])}">${g[1]}</b>${P4[g[1]]?` <i>(${P4[g[1]]})</i>`:""}</span><span class="sc">${s?s[0]+"-"+s[1]:""}</span></span>`}).join("")}</div></div>`).join("");
  $("stand").innerHTML=scores?standings():""}
 function build0(){build()}
 function simulate(){scores=sched.map(w=>w.games.map(()=>{let a=3+(Math.random()*8|0)*3+(Math.random()*3|0),b=3+(Math.random()*8|0)*3+(Math.random()*3|0);if(a==b)a+=3;return[a,b]}));render()}
 function standings(){
  const rec={};divs().flat().forEach(t=>rec[t]={w:0,l:0,pf:0,pa:0});
- sched.forEach((w,wi)=>w.games.forEach((g,gi)=>{const[s1,s2]=scores[wi][gi];rec[g[0]].pf+=s1;rec[g[0]].pa+=s2;rec[g[1]].pf+=s2;rec[g[1]].pa+=s1;(s1>s2?(rec[g[0]].w++,rec[g[1]].l++):(rec[g[1]].w++,rec[g[0]].l++))}));
+ sched.forEach((w,wi)=>w.games.forEach((g,gi)=>{const[s1,s2]=scores[wi][gi];const a=rec[g[0]],b=rec[g[1]];a.pf+=s1;a.pa+=s2;if(b){b.pf+=s2;b.pa+=s1}if(s1>s2){a.w++;b&&b.l++}else{a.l++;b&&b.w++}}));
  const tbl=d=>`<table><tr><th>Team</th><th>W-L</th><th>PF-PA</th></tr>${d.slice().sort((x,y)=>rec[y].w-rec[x].w||(rec[y].pf-rec[y].pa)-(rec[x].pf-rec[x].pa)).map(t=>`<tr><td>${t}</td><td>${rec[t].w}-${rec[t].l}</td><td>${rec[t].pf}-${rec[t].pa}</td></tr>`).join("")}</table>`;
  const [A,B]=divs();
  return `<h2 class="s">Simulated standings</h2><div class="tw"><div class="d A"><h2>Division A</h2>${tbl(A)}</div><div class="d B"><h2>Division B</h2>${tbl(B)}</div></div>`}
