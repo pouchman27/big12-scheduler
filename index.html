@@ -31,7 +31,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 .fmt{background:var(--card);border-radius:14px;padding:14px;margin-top:18px}.fmt h2{margin:0 0 2px;font-size:17px;text-align:center}.fmt .sub{color:var(--mut);text-align:center;font-size:13px;margin-bottom:12px}
 .strip{display:grid;grid-template-columns:repeat(12,1fr);gap:6px}
 .blk{border-radius:9px;padding:8px 1px;text-align:center;color:#111;font-weight:700;font-size:10.5px;line-height:1.25}.blk b{display:block;font-size:18px}.blk span{display:block;font-weight:600;font-size:10.5px}
-.k-nc{background:#8793ad}.k-in{background:var(--a)}.k-x{background:#4cc3ff}.k-f{background:#fff;box-shadow:0 0 0 2px var(--b)}
+.k-p4{background:#c7a6ff}.k-nc{background:#8793ad}.k-in{background:var(--a)}.k-x{background:#4cc3ff}.k-f{background:#fff;box-shadow:0 0 0 2px var(--b)}
 .brace{display:grid;grid-template-columns:3fr 7fr 2fr;gap:6px;margin-top:6px;text-align:center;font-size:12px;color:var(--mut)}.brace div{border-top:3px solid;padding-top:4px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:10px;font-size:13px}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media(max-width:640px){.strip{grid-template-columns:repeat(6,1fr)}.brace{display:none}}
@@ -52,12 +52,13 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <div class="divs" id="divs"></div>
 <div class="fmt"><h2>Season format: 12 games per team</h2><div class="sub">Every team plays the same 12-week structure</div>
 <div class="strip">
-<div class="blk k-nc"><b>1</b>Non-conf</div><div class="blk k-nc"><b>2</b>Non-conf</div><div class="blk k-nc"><b>3</b>Non-conf</div><div class="blk k-in"><b>4</b>Division</div><div class="blk k-in"><b>5</b>Division</div><div class="blk k-in"><b>6</b>Division</div><div class="blk k-in"><b>7</b>Division</div><div class="blk k-in"><b>8</b>Division</div><div class="blk k-in"><b>9</b>Division</div><div class="blk k-in"><b>10</b>Division</div><div class="blk k-x"><b>11</b>Crossover<span>#1</span></div><div class="blk k-f"><b>12</b>Crossover<span>#2 - finale</span></div></div>
-<div class="brace"><div style="border-color:#8793ad">3 non-conference<br><b style="color:var(--ink)">min 1 Power 4</b></div><div style="border-color:var(--a)">7 in-division games (round robin)</div><div style="border-color:var(--b)">2 crossover games</div></div>
-<div class="legend"><span><i style="background:#8793ad"></i>Non-conference (at least 1 of the 3 vs Power 4)</span><span><i style="background:var(--a)"></i>In division</span><span><i style="background:var(--b)"></i>Crossover vs other division</span></div></div>
+<div class="blk k-p4"><b>1</b>Non-conf<span>Power 4 &#9733;</span></div><div class="blk k-nc"><b>2</b>Non-conf<span>non-P4</span></div><div class="blk k-nc"><b>3</b>Non-conf<span>non-P4</span></div><div class="blk k-in"><b>4</b>Division</div><div class="blk k-in"><b>5</b>Division</div><div class="blk k-in"><b>6</b>Division</div><div class="blk k-x"><b>7</b>Crossover<span>mid-season</span></div><div class="blk k-in"><b>8</b>Division</div><div class="blk k-in"><b>9</b>Division</div><div class="blk k-in"><b>10</b>Division</div><div class="blk k-in"><b>11</b>Division</div><div class="blk k-f"><b>12</b>Conf. Champ.<span>&#127942; seeded</span></div></div>
+<div class="brace" style="grid-template-columns:3fr 3fr 1fr 4fr 1fr"><div style="border-color:#c7a6ff">3 non-conference: 1 Power 4 + 2 non-P4 (order varies by team)</div><div style="border-color:var(--a)">3 division games</div><div style="border-color:var(--b)">1 crossover</div><div style="border-color:var(--a)">4 division games (7 total)</div><div style="border-color:#fff">Final week</div></div>
+<div class="sub" style="margin:10px 0 0">Week 12 is seeded off the standings, NFL style: 1 plays 1, 2 plays 2, etc. A1 vs B1 is the conference championship.</div>
+<div class="legend"><span><i style="background:#c7a6ff"></i>Non-conference vs Power 4 (1)</span><span><i style="background:#8793ad"></i>Non-conference non-Power 4 (2)</span><span><i style="background:var(--a)"></i>In division</span><span><i style="background:var(--b)"></i>Crossover vs other division</span><span><i style="background:#fff"></i>Championship week</span></div></div>
 <h2 class="s">Mock schedule</h2><div id="weeks"></div>
 <div id="stand"></div>
-<p class="note">Each team plays 12 games: Weeks 1-3 are 3 non-conference games with a minimum of 1 Power 4 opponent (SEC, Big Ten or ACC, marked with a star), Weeks 4-10 are the 7 in-division games (round robin, random order), Week 11 is crossover game 1 and Week 12, the last week, is crossover game 2 (each team faces a different team from the other division both times). Team list: 2026 Big 12 membership.</p>
+<p class="note">Each team plays 12 games: Weeks 1-3 are 3 non-conference games (1 Power 4 opponent from the SEC, Big Ten or ACC, marked with a star, plus 2 non-Power 4 opponents), Weeks 4-6 and 8-11 are the 7 in-division games (round robin, random order), Week 7 is the mid-season crossover game against the other division, and Week 12 is Conference Championship week: teams are seeded by the standings and A1 plays B1 for the title, A2 plays B2, and so on down to A8 vs B8 (hit Simulate scores to seed it). Team list: 2026 Big 12 membership.</p>
 </main>
 <script>
 const GEO=[["Mountain & Desert",["Arizona","Arizona State","Utah","BYU"]],
@@ -86,7 +87,7 @@ const P4={"Alabama":"SEC","Georgia":"SEC","Texas":"SEC","Oklahoma":"SEC","LSU":"
 const OTH={"Boise State":"MWC","Memphis":"AAC","Tulane":"AAC","Liberty":"CUSA","Navy":"AAC","Army":"AAC","App State":"Sun Belt","Fresno State":"MWC","UNLV":"MWC","James Madison":"Sun Belt","Toledo":"MAC","Ohio":"MAC","Troy":"Sun Belt","Utah State":"MWC","Wyoming":"MWC","Air Force":"MWC","San Diego State":"MWC","North Texas":"AAC","South Alabama":"Sun Belt","Western Kentucky":"CUSA","North Dakota State":"FCS","Sacramento State":"FCS","Montana":"FCS","Weber State":"FCS","Southern Utah":"FCS","Northern Iowa":"FCS","Idaho":"FCS","Tarleton State":"FCS"};
 const OPPC=Object.assign({},OTH,P4);
 function drawNC(teams){ // 3 non-conf weeks; each team gets 3 distinct opponents, at least 1 Power 4
- const p4=Object.keys(P4),all=Object.keys(OPPC),pw={},used={},wk=[[],[],[]];
+ const p4=Object.keys(P4),all=Object.keys(OTH),pw={},used={},wk=[[],[],[]];
  teams.forEach(t=>{pw[t]=Math.random()*3|0;used[t]=new Set()});
  for(let w=0;w<3;w++){const taken=new Set();
   shuf(teams).forEach(t=>{const pool=shuf(pw[t]==w?p4:all).filter(o=>!taken.has(o)&&!used[t].has(o));const o=pool[0];taken.add(o);used[t].add(o);wk[w].push([t,o])})}
@@ -94,12 +95,14 @@ function drawNC(teams){ // 3 non-conf weeks; each team gets 3 distinct opponents
 function build(){
  const [A,B]=divs(),ra=rr(A),rb=rr(B),weeks=[];
  drawNC([...A,...B]).forEach(g=>weeks.push({nc:true,games:g}));
- for(let w=0;w<7;w++)weeks.push({games:[...ra[w],...rb[w]]});
- const b1=shuf(B),b2=b1.slice(1).concat(b1[0]),sa=shuf(A);
+ const dw=[];for(let w=0;w<7;w++)dw.push({games:[...ra[w],...rb[w]]});
+ const b1=shuf(B),sa=shuf(A);
+ weeks.push(...dw.slice(0,3));
  weeks.push({x:true,games:sa.map((a,i)=>[a,b1[i]])});
- weeks.push({fin:true,games:sa.map((a,i)=>[a,b2[i]])});
+ weeks.push(...dw.slice(3));
+ weeks.push({fin:true,games:[]});
  sched=weeks;scores=null;render()}
-function dv(t){return OPPC[t]?"N":divs()[0].includes(t)?"A":"B"}
+function dv(t){return /^[AB]\d$/.test(t)?t[0]:OPPC[t]?"N":divs()[0].includes(t)?"A":"B"}
 function render(){
  $("hint").innerHTML=editing?`<div class="hint">Editing quadrants: tap a team, then tap another team to swap them (or drag one onto another). Tap a quadrant name to rename it. Every quadrant always keeps 4 teams. Changes save automatically.${picked?`<br><b style="color:var(--a)">${picked} selected - now tap the team to swap with.</b>`:""}</div>`:"";
  $("edit").textContent=editing?"Done editing":"Edit quadrants";
@@ -109,16 +112,21 @@ function render(){
  const [A,B]=divs(),nm=names()[pairIdx].split("  vs  ");
  $("divs").innerHTML=[["A",A,nm[0]],["B",B,nm[1]]].map(([k,d,n])=>`<div class="d ${k}"><h2>Division ${k}</h2><small>${n}</small><div style="margin-top:6px">${d.join(", ")}</div></div>`).join("");
  if(!sched)build0();
- $("weeks").innerHTML=sched.map((w,wi)=>`<div class="wk ${w.fin?"fin":""} ${w.nc?"nc":""}"><h4>Week ${wi+1}${w.nc?" - Non-conference (each team: min 1 Power 4 across Weeks 1-3)":w.x?" - Crossover game 1 (vs other division)":w.fin?" - Crossover game 2 - Division vs Division finale":" - In-division"}</h4><div class="g">${w.games.map((g,gi)=>{const s=scores&&scores[wi][gi];return `<span><span><b class="${dv(g[0])}">${g[0]}</b> vs <b class="${dv(g[1])}">${g[1]}</b>${OPPC[g[1]]?` <i>${P4[g[1]]?"&#9733; ":""}(${OPPC[g[1]]})</i>`:""}</span><span class="sc">${s?s[0]+"-"+s[1]:""}</span></span>`}).join("")}</div></div>`).join("");
+ $("weeks").innerHTML=sched.map((w,wi)=>{const GM=w.fin?finGames():w.games;return `<div class="wk ${w.fin?"fin":""} ${w.nc?"nc":""}"><h4>Week ${wi+1}${w.nc?" - Non-conference (each team: 1 Power 4 + 2 non-Power 4 across Weeks 1-3)":w.x?" - Mid-season crossover (vs other division)":w.fin?" - Conference Championship week (seeded by standings, 1 v 1, 2 v 2...)":" - In-division"}</h4><div class="g">${GM.map((g,gi)=>{const s=scores&&scores[wi]&&scores[wi][gi];return `<span><span>${w.fin&&gi==0?"&#127942; ":""}<b class="${dv(g[0])}">${g[0]}</b> vs <b class="${dv(g[1])}">${g[1]}</b>${OPPC[g[1]]?` <i>${P4[g[1]]?"&#9733; ":""}(${OPPC[g[1]]})</i>`:""}</span><span class="sc">${s?s[0]+"-"+s[1]:w.fin&&gi==0?"Championship":""}</span></span>`}).join("")}</div>${w.fin&&scores?champ():""}</div>`}).join("");
  $("stand").innerHTML=scores?standings():""}
 function build0(){build()}
-function simulate(){scores=sched.map(w=>w.games.map(()=>{let a=3+(Math.random()*8|0)*3+(Math.random()*3|0),b=3+(Math.random()*8|0)*3+(Math.random()*3|0);if(a==b)a+=3;return[a,b]}));render()}
+function rnd(){let a=3+(Math.random()*8|0)*3+(Math.random()*3|0),b=3+(Math.random()*8|0)*3+(Math.random()*3|0);if(a==b)a+=3;return[a,b]}
+function records(){const rec={};divs().flat().forEach(t=>rec[t]={w:0,l:0,pf:0,pa:0});
+ sched.forEach((w,wi)=>{if(w.fin)return;w.games.forEach((g,gi)=>{const[s1,s2]=scores[wi][gi];const a=rec[g[0]],b=rec[g[1]];a.pf+=s1;a.pa+=s2;if(b){b.pf+=s2;b.pa+=s1}if(s1>s2){a.w++;b&&b.l++}else{a.l++;b&&b.w++}})});return rec}
+function ranked(d,rec){return d.slice().sort((x,y)=>rec[y].w-rec[x].w||(rec[y].pf-rec[y].pa)-(rec[x].pf-rec[x].pa))}
+function finGames(){const[A,B]=divs();if(!scores||!scores[0]){return A.map((_,i)=>["A"+(i+1),"B"+(i+1)])}const rec=records(),ra=ranked(A,rec),rb=ranked(B,rec);return ra.map((a,i)=>[a,rb[i]])}
+function champ(){const g=finGames()[0],s=scores[sched.length-1][0];return `<p style="margin:8px 0 0;font-weight:700;color:var(--a)">&#127942; Conference champion: ${s[0]>s[1]?g[0]:g[1]}</p>`}
+function simulate(){scores=sched.map(w=>w.fin?[]:w.games.map(rnd));scores[sched.length-1]=finGames().map(rnd);render()}
 function standings(){
- const rec={};divs().flat().forEach(t=>rec[t]={w:0,l:0,pf:0,pa:0});
- sched.forEach((w,wi)=>w.games.forEach((g,gi)=>{const[s1,s2]=scores[wi][gi];const a=rec[g[0]],b=rec[g[1]];a.pf+=s1;a.pa+=s2;if(b){b.pf+=s2;b.pa+=s1}if(s1>s2){a.w++;b&&b.l++}else{a.l++;b&&b.w++}}));
- const tbl=d=>`<table><tr><th>Team</th><th>W-L</th><th>PF-PA</th></tr>${d.slice().sort((x,y)=>rec[y].w-rec[x].w||(rec[y].pf-rec[y].pa)-(rec[x].pf-rec[x].pa)).map(t=>`<tr><td>${t}</td><td>${rec[t].w}-${rec[t].l}</td><td>${rec[t].pf}-${rec[t].pa}</td></tr>`).join("")}</table>`;
+ const rec=records();
+ const tbl=(d,k)=>`<table><tr><th>Seed</th><th>Team</th><th>W-L</th><th>PF-PA</th></tr>${ranked(d,rec).map((t,i)=>`<tr><td>${k}${i+1}</td><td>${t}</td><td>${rec[t].w}-${rec[t].l}</td><td>${rec[t].pf}-${rec[t].pa}</td></tr>`).join("")}</table>`;
  const [A,B]=divs();
- return `<h2 class="s">Simulated standings</h2><div class="tw"><div class="d A"><h2>Division A</h2>${tbl(A)}</div><div class="d B"><h2>Division B</h2>${tbl(B)}</div></div>`}
+ return `<h2 class="s">Simulated standings (Weeks 1-11) - these set the Week 12 seeds</h2><div class="tw"><div class="d A"><h2>Division A</h2>${tbl(A,"A")}</div><div class="d B"><h2>Division B</h2>${tbl(B,"B")}</div></div>`}
 $("sched").onclick=build;
 $("sim").onclick=()=>{if(!sched)build();simulate()};
 $("geo").onclick=()=>{Q=GEO.map(q=>({name:q[0],teams:q[1].slice()}));picked=null;save();fillSel();build()};
