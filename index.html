@@ -27,6 +27,14 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 @media(max-width:640px){.divs,.tw{grid-template-columns:1fr}}
 .q .t.e{cursor:pointer;border-radius:6px;padding:5px 8px;margin:2px 0;background:#232c45;touch-action:manipulation}.q .t.e:hover{background:#2c3858}.q .t.sel{background:var(--a);color:#111;font-weight:700}.q h3 .ren{cursor:pointer;text-decoration:underline dotted}.hint{background:var(--card);border:1px dashed var(--a);border-radius:10px;padding:8px 12px;margin:0 0 10px;text-align:center;color:var(--mut)}
 .g b.N{color:var(--mut)}.g i{font-style:normal;color:var(--mut);font-size:12px}.wk.nc{outline:1px dashed #4a5578}
+
+.fmt{background:var(--card);border-radius:14px;padding:14px;margin-top:18px}.fmt h2{margin:0 0 2px;font-size:17px;text-align:center}.fmt .sub{color:var(--mut);text-align:center;font-size:13px;margin-bottom:12px}
+.strip{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+.blk{border-radius:9px;padding:8px 2px;text-align:center;color:#111;font-weight:700;font-size:12px;line-height:1.25}.blk b{display:block;font-size:18px}.blk span{display:block;font-weight:600;font-size:10.5px}
+.k-nc{background:#8793ad}.k-in{background:var(--a)}.k-x{background:#4cc3ff}.k-f{background:#fff;box-shadow:0 0 0 2px var(--b)}
+.brace{display:grid;grid-template-columns:1fr 7fr 2fr;gap:6px;margin-top:6px;text-align:center;font-size:12px;color:var(--mut)}.brace div{border-top:3px solid;padding-top:4px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:10px;font-size:13px}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+@media(max-width:640px){.strip{grid-template-columns:repeat(5,1fr)}.brace{display:none}}
 .note{color:var(--mut);font-size:13px;text-align:center}
 </style></head><body>
 <header><h1>Big 12 Quadrant Scheduler</h1><p>16 teams, 4 quadrants, 2 divisions, one randomized 10-game mock season.</p></header>
@@ -42,6 +50,14 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <div id="hint"></div>
 <div class="quads" id="quads"></div>
 <div class="divs" id="divs"></div>
+<div class="fmt"><h2>Season format: 10 games per team</h2><div class="sub">Every team plays the same 10-week structure</div>
+<div class="strip">
+<div class="blk k-nc"><b>1</b>Non-conf<span>Power 4 opp.</span></div>
+<div class="blk k-in"><b>2</b>Division</div><div class="blk k-in"><b>3</b>Division</div><div class="blk k-in"><b>4</b>Division</div><div class="blk k-in"><b>5</b>Division</div><div class="blk k-in"><b>6</b>Division</div><div class="blk k-in"><b>7</b>Division</div><div class="blk k-in"><b>8</b>Division</div>
+<div class="blk k-x"><b>9</b>Crossover<span>#1</span></div>
+<div class="blk k-f"><b>10</b>Crossover<span>#2 - finale</span></div></div>
+<div class="brace"><div style="border-color:#8793ad">1 non-conference</div><div style="border-color:var(--a)">7 in-division games (round robin)</div><div style="border-color:var(--b)">2 crossover games</div></div>
+<div class="legend"><span><i style="background:#8793ad"></i>Non-conference vs Power 4</span><span><i style="background:var(--a)"></i>In division</span><span><i style="background:var(--b)"></i>Crossover vs other division</span></div></div>
 <h2 class="s">Mock schedule</h2><div id="weeks"></div>
 <div id="stand"></div>
 <p class="note">Each team plays 10 games: Week 1 is 1 non-conference game vs a Power 4 opponent (SEC, Big Ten or ACC), Weeks 2-8 are the 7 in-division games (round robin, random order), Week 9 is crossover game 1 and Week 10, the last week, is crossover game 2 (each team faces a different team from the other division both times). Team list: 2026 Big 12 membership.</p>
