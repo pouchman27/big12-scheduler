@@ -35,6 +35,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 .brace{display:grid;grid-template-columns:3fr 7fr 2fr;gap:6px;margin-top:6px;text-align:center;font-size:12px;color:var(--mut)}.brace div{border-top:3px solid;padding-top:4px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:10px;font-size:13px}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media(max-width:640px){.strip{grid-template-columns:repeat(6,1fr)}.brace{display:none}}
+.tgt{outline:2px dashed var(--a);outline-offset:-2px}.chip.e{display:inline-block;cursor:pointer;margin:4px 5px 0 0;padding:5px 10px;border-radius:7px;background:#232c45;touch-action:manipulation}.chip.e:hover{background:#2c3858}.chip.sel{background:var(--a);color:#111;font-weight:700}
 .note{color:var(--mut);font-size:13px;text-align:center}
 </style></head><body>
 <header><h1>Big 12 Quadrant Scheduler</h1><p>16 teams, 4 quadrants, 2 divisions, one randomized 12-game mock season.</p></header>
@@ -42,7 +43,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <div class="bar">
 <button class="p" id="sched">Randomize schedule</button>
 <button id="redraw">Redraw quadrants (random)</button>
-<button id="edit">Edit quadrants</button>
+<button id="edit">Edit quadrants / divisions</button>
 <button id="geo">Reset to geographic</button>
 <select id="pair"></select>
 <button id="sim">Simulate scores</button>
@@ -103,14 +104,17 @@ function build(){
  weeks.push({fin:true,games:[]});
  sched=weeks;scores=null;render()}
 function dv(t){return /^[AB]\d$/.test(t)?t[0]:OPPC[t]?"N":divs()[0].includes(t)?"A":"B"}
+function bindT(){document.querySelectorAll(".t.e").forEach(el=>{const t=el.dataset.t;el.onclick=()=>pick(t);el.ondragstart=e=>{e.dataTransfer.setData("text/plain",t)};el.ondragover=e=>e.preventDefault();el.ondrop=e=>{e.preventDefault();const f=e.dataTransfer.getData("text/plain");if(f&&f!=t){swap(f,t);picked=null;save();fillSel();build()}}})}
+const tg=t=>picked&&picked!=t&&dv(picked)!=dv(t);
 function render(){
- $("hint").innerHTML=editing?`<div class="hint">Editing quadrants: tap a team, then tap another team to swap them (or drag one onto another). Tap a quadrant name to rename it. Every quadrant always keeps 4 teams. Changes save automatically.${picked?`<br><b style="color:var(--a)">${picked} selected - now tap the team to swap with.</b>`:""}</div>`:"";
- $("edit").textContent=editing?"Done editing":"Edit quadrants";
- $("quads").innerHTML=Q.map((q,i)=>`<div class="q" style="border-top-color:${COL[i]}"><h3>${editing?`<span class="ren" data-q="${i}">${q.name}</span>`:q.name}</h3>${q.teams.map(t=>`<div class="t${editing?" e":""}${picked==t?" sel":""}" ${editing?`data-t="${t}" draggable="true"`:""}>${t}</div>`).join("")}</div>`).join("");
+ $("hint").innerHTML=editing?`<div class="hint">Editing quadrants and divisions: tap a team (in a quadrant or in a division box), then tap a team in the OTHER division to trade divisions with it - each moves into the other's quadrant, so divisions stay 8 and 8. Tapping a team in the same division just swaps their quadrants. Drag-onto-another works too. Tap a quadrant name to rename it. Every quadrant always keeps 4 teams. Changes save automatically.${picked?`<br><b style="color:var(--a)">Moving ${picked} from Division ${dv(picked)} to Division ${dv(picked)=="A"?"B":"A"}: tap the dashed Division ${dv(picked)=="A"?"B":"A"} team that comes back to Division ${dv(picked)} in exchange.</b>`:""}</div>`:"";
+ $("edit").textContent=editing?"Done editing":"Edit quadrants / divisions";
+ $("quads").innerHTML=Q.map((q,i)=>`<div class="q" style="border-top-color:${COL[i]}"><h3>${editing?`<span class="ren" data-q="${i}">${q.name}</span>`:q.name}</h3>${q.teams.map(t=>`<div class="t${editing?" e":""}${picked==t?" sel":""}${tg(t)?" tgt":""}" ${editing?`data-t="${t}" draggable="true"`:""}>${t}</div>`).join("")}</div>`).join("");
  if(editing){document.querySelectorAll(".t.e").forEach(el=>{const t=el.dataset.t;el.onclick=()=>pick(t);el.ondragstart=e=>{e.dataTransfer.setData("text/plain",t)};el.ondragover=e=>e.preventDefault();el.ondrop=e=>{e.preventDefault();const f=e.dataTransfer.getData("text/plain");if(f&&f!=t){swap(f,t);picked=null;save();fillSel();build()}}});
   document.querySelectorAll(".ren").forEach(el=>el.onclick=()=>{const i=+el.dataset.q,n=prompt("Quadrant name",Q[i].name);if(n&&n.trim()){Q[i].name=n.trim().slice(0,30);save();fillSel();render()}})}
  const [A,B]=divs(),nm=names()[pairIdx].split("  vs  ");
- $("divs").innerHTML=[["A",A,nm[0]],["B",B,nm[1]]].map(([k,d,n])=>`<div class="d ${k}"><h2>Division ${k}</h2><small>${n}</small><div style="margin-top:6px">${d.join(", ")}</div></div>`).join("");
+ $("divs").innerHTML=[["A",A,nm[0]],["B",B,nm[1]]].map(([k,d,n])=>`<div class="d ${k}"><h2>Division ${k}</h2><small>${n}</small><div style="margin-top:6px">${editing?d.map(t=>`<span class="t e chip${picked==t?" sel":""}${tg(t)?" tgt":""}" data-t="${t}" draggable="true">${t}</span>`).join(""):d.join(", ")}</div></div>`).join("");
+ if(editing)bindT();
  if(!sched)build0();
  $("weeks").innerHTML=sched.map((w,wi)=>{const GM=w.fin?finGames():w.games;return `<div class="wk ${w.fin?"fin":""} ${w.nc?"nc":""}"><h4>Week ${wi+1}${w.nc?" - Non-conference (each team: 1 Power 4 + 2 non-Power 4 across Weeks 1-3)":w.x?" - Mid-season crossover (vs other division)":w.fin?" - Conference Championship week (seeded by standings, 1 v 1, 2 v 2...)":" - In-division"}</h4><div class="g">${GM.map((g,gi)=>{const s=scores&&scores[wi]&&scores[wi][gi];return `<span><span>${w.fin&&gi==0?"&#127942; ":""}<b class="${dv(g[0])}">${g[0]}</b> vs <b class="${dv(g[1])}">${g[1]}</b>${OPPC[g[1]]?` <i>${P4[g[1]]?"&#9733; ":""}(${OPPC[g[1]]})</i>`:""}</span><span class="sc">${s?s[0]+"-"+s[1]:w.fin&&gi==0?"Championship":""}</span></span>`}).join("")}</div>${w.fin&&scores?champ():""}</div>`}).join("");
  $("stand").innerHTML=scores?standings():""}
