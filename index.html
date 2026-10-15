@@ -25,6 +25,7 @@ h2.s{margin:26px 0 8px}
 table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}th{color:var(--mut);font-weight:500}
 .tw{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:640px){.divs,.tw{grid-template-columns:1fr}}
+.q .t.e{cursor:pointer;border-radius:6px;padding:5px 8px;margin:2px 0;background:#232c45;touch-action:manipulation}.q .t.e:hover{background:#2c3858}.q .t.sel{background:var(--a);color:#111;font-weight:700}.q h3 .ren{cursor:pointer;text-decoration:underline dotted}.hint{background:var(--card);border:1px dashed var(--a);border-radius:10px;padding:8px 12px;margin:0 0 10px;text-align:center;color:var(--mut)}
 .note{color:var(--mut);font-size:13px;text-align:center}
 </style></head><body>
 <header><h1>Big 12 Quadrant Scheduler</h1><p>16 teams, 4 quadrants, 2 divisions, one randomized mock season.</p></header>
@@ -32,10 +33,12 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <div class="bar">
 <button class="p" id="sched">Randomize schedule</button>
 <button id="redraw">Redraw quadrants (random)</button>
+<button id="edit">Edit quadrants</button>
 <button id="geo">Reset to geographic</button>
 <select id="pair"></select>
 <button id="sim">Simulate scores</button>
 </div>
+<div id="hint"></div>
 <div class="quads" id="quads"></div>
 <div class="divs" id="divs"></div>
 <h2 class="s">Mock schedule</h2><div id="weeks"></div>
@@ -49,7 +52,12 @@ const GEO=[["Mountain & Desert",["Arizona","Arizona State","Utah","BYU"]],
 ["East & Sooner",["Oklahoma State","Cincinnati","UCF","West Virginia"]]];
 const PAIRS=[[[0,2],[1,3]],[[0,1],[2,3]],[[0,3],[1,2]]];
 const COL=["#e0a030","#d9534f","#5cb85c","#4cc3ff"];
-let Q=GEO.map(q=>({name:q[0],teams:q[1].slice()})),pairIdx=0,sched=null,scores=null;
+let Q=GEO.map(q=>({name:q[0],teams:q[1].slice()})),pairIdx=0,sched=null,scores=null,editing=false,picked=null;
+const KEY="big12-quadrants-v1",ALL=GEO.flatMap(q=>q[1]);
+function save(){try{localStorage.setItem(KEY,JSON.stringify({Q,pairIdx}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(!d||!Array.isArray(d.Q)||d.Q.length!=4)return;const flat=d.Q.flatMap(q=>q.teams);if(d.Q.some(q=>q.teams.length!=4)||flat.length!=16||ALL.some(t=>!flat.includes(t)))return;Q=d.Q.map(q=>({name:String(q.name).slice(0,30),teams:q.teams.slice()}));pairIdx=[0,1,2].includes(d.pairIdx)?d.pairIdx:0}catch(e){}}
+function swap(a,b){let ia,ta,ib,tb;Q.forEach((q,i)=>q.teams.forEach((t,j)=>{if(t==a){ia=i;ta=j}if(t==b){ib=i;tb=j}}));Q[ia].teams[ta]=b;Q[ib].teams[tb]=a}
+function pick(t){if(picked==null){picked=t;render();return}if(picked!=t){swap(picked,t);picked=null;save();fillSel();build();return}picked=null;render()}
 const $=id=>document.getElementById(id);
 const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 const sel=$("pair");
@@ -67,7 +75,11 @@ function build(){
  sched=weeks;scores=null;render()}
 function dv(t){return divs()[0].includes(t)?"A":"B"}
 function render(){
- $("quads").innerHTML=Q.map((q,i)=>`<div class="q" style="border-top-color:${COL[i]}"><h3>${q.name}</h3>${q.teams.map(t=>`<div class="t">${t}</div>`).join("")}</div>`).join("");
+ $("hint").innerHTML=editing?`<div class="hint">Editing quadrants: tap a team, then tap another team to swap them (or drag one onto another). Tap a quadrant name to rename it. Every quadrant always keeps 4 teams. Changes save automatically.${picked?`<br><b style="color:var(--a)">${picked} selected - now tap the team to swap with.</b>`:""}</div>`:"";
+ $("edit").textContent=editing?"Done editing":"Edit quadrants";
+ $("quads").innerHTML=Q.map((q,i)=>`<div class="q" style="border-top-color:${COL[i]}"><h3>${editing?`<span class="ren" data-q="${i}">${q.name}</span>`:q.name}</h3>${q.teams.map(t=>`<div class="t${editing?" e":""}${picked==t?" sel":""}" ${editing?`data-t="${t}" draggable="true"`:""}>${t}</div>`).join("")}</div>`).join("");
+ if(editing){document.querySelectorAll(".t.e").forEach(el=>{const t=el.dataset.t;el.onclick=()=>pick(t);el.ondragstart=e=>{e.dataTransfer.setData("text/plain",t)};el.ondragover=e=>e.preventDefault();el.ondrop=e=>{e.preventDefault();const f=e.dataTransfer.getData("text/plain");if(f&&f!=t){swap(f,t);picked=null;save();fillSel();build()}}});
+  document.querySelectorAll(".ren").forEach(el=>el.onclick=()=>{const i=+el.dataset.q,n=prompt("Quadrant name",Q[i].name);if(n&&n.trim()){Q[i].name=n.trim().slice(0,30);save();fillSel();render()}})}
  const [A,B]=divs(),nm=names()[pairIdx].split("  vs  ");
  $("divs").innerHTML=[["A",A,nm[0]],["B",B,nm[1]]].map(([k,d,n])=>`<div class="d ${k}"><h2>Division ${k}</h2><small>${n}</small><div style="margin-top:6px">${d.join(", ")}</div></div>`).join("");
  if(!sched)build0();
@@ -83,8 +95,9 @@ function standings(){
  return `<h2 class="s">Simulated standings</h2><div class="tw"><div class="d A"><h2>Division A</h2>${tbl(A)}</div><div class="d B"><h2>Division B</h2>${tbl(B)}</div></div>`}
 $("sched").onclick=build;
 $("sim").onclick=()=>{if(!sched)build();simulate()};
-$("geo").onclick=()=>{Q=GEO.map(q=>({name:q[0],teams:q[1].slice()}));fillSel();build()};
-$("redraw").onclick=()=>{const all=shuf(GEO.flatMap(q=>q[1]));Q=Q.map((q,i)=>({name:"Quadrant "+(i+1),teams:all.slice(i*4,i*4+4)}));fillSel();build()};
-sel.onchange=()=>{pairIdx=+sel.value;build()};
-fillSel();build();
+$("geo").onclick=()=>{Q=GEO.map(q=>({name:q[0],teams:q[1].slice()}));picked=null;save();fillSel();build()};
+$("edit").onclick=()=>{editing=!editing;picked=null;render()};
+$("redraw").onclick=()=>{const all=shuf(GEO.flatMap(q=>q[1]));Q=Q.map((q,i)=>({name:"Quadrant "+(i+1),teams:all.slice(i*4,i*4+4)}));picked=null;save();fillSel();build()};
+sel.onchange=()=>{pairIdx=+sel.value;save();build()};
+load();fillSel();build();
 </script></body></html>
