@@ -36,6 +36,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:10px;font-size:13px}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media(max-width:640px){.strip{grid-template-columns:repeat(6,1fr)}.brace{display:none}}
 .tgt{outline:2px dashed var(--a);outline-offset:-2px}.chip.e{display:inline-block;cursor:pointer;margin:4px 5px 0 0;padding:5px 10px;border-radius:7px;background:#232c45;touch-action:manipulation}.chip.e:hover{background:#2c3858}.chip.sel{background:var(--a);color:#111;font-weight:700}
+.bar button#edit{border:2px solid var(--a);font-weight:700}.bar button#edit.on{background:var(--a);color:#111}.q .t.e::after{content:"\21C4";float:right;color:var(--mut)}.q .t.sel::after{color:#111}.chip.e::after{content:" \21C4";color:var(--mut)}.chip.sel::after{color:#111}.hint{border-style:solid;border-width:2px}
 .note{color:var(--mut);font-size:13px;text-align:center}
 </style></head><body>
 <header><h1>Big 12 Quadrant Scheduler</h1><p>16 teams, 4 quadrants, 2 divisions, one randomized 12-game mock season.</p></header>
@@ -43,7 +44,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <div class="bar">
 <button class="p" id="sched">Randomize schedule</button>
 <button id="redraw">Redraw quadrants (random)</button>
-<button id="edit">Edit quadrants / divisions</button>
+<button id="edit">Swap teams / edit quadrants</button>
 <button id="geo">Reset to geographic</button>
 <select id="pair"></select>
 <button id="sim">Simulate scores</button>
@@ -108,7 +109,7 @@ function bindT(){document.querySelectorAll(".t.e").forEach(el=>{const t=el.datas
 const tg=t=>picked&&picked!=t&&dv(picked)!=dv(t);
 function render(){
  $("hint").innerHTML=editing?`<div class="hint">Editing quadrants and divisions: tap a team (in a quadrant or in a division box), then tap a team in the OTHER division to trade divisions with it - each moves into the other's quadrant, so divisions stay 8 and 8. Tapping a team in the same division just swaps their quadrants. Drag-onto-another works too. Tap a quadrant name to rename it. Every quadrant always keeps 4 teams. Changes save automatically.${picked?`<br><b style="color:var(--a)">Moving ${picked} from Division ${dv(picked)} to Division ${dv(picked)=="A"?"B":"A"}: tap the dashed Division ${dv(picked)=="A"?"B":"A"} team that comes back to Division ${dv(picked)} in exchange.</b>`:""}</div>`:"";
- $("edit").textContent=editing?"Done editing":"Edit quadrants / divisions";
+ $("edit").textContent=editing?"Done swapping":"Swap teams / edit quadrants";$("edit").classList.toggle("on",editing);
  $("quads").innerHTML=Q.map((q,i)=>`<div class="q" style="border-top-color:${COL[i]}"><h3>${editing?`<span class="ren" data-q="${i}">${q.name}</span>`:q.name}</h3>${q.teams.map(t=>`<div class="t${editing?" e":""}${picked==t?" sel":""}${tg(t)?" tgt":""}" ${editing?`data-t="${t}" draggable="true"`:""}>${t}</div>`).join("")}</div>`).join("");
  if(editing){document.querySelectorAll(".t.e").forEach(el=>{const t=el.dataset.t;el.onclick=()=>pick(t);el.ondragstart=e=>{e.dataTransfer.setData("text/plain",t)};el.ondragover=e=>e.preventDefault();el.ondrop=e=>{e.preventDefault();const f=e.dataTransfer.getData("text/plain");if(f&&f!=t){swap(f,t);picked=null;save();fillSel();build()}}});
   document.querySelectorAll(".ren").forEach(el=>el.onclick=()=>{const i=+el.dataset.q,n=prompt("Quadrant name",Q[i].name);if(n&&n.trim()){Q[i].name=n.trim().slice(0,30);save();fillSel();render()}})}
