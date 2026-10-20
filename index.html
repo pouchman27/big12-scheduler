@@ -53,6 +53,8 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 .tbflow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:8px}
 .tbf{background:#232c45;border-radius:9px;padding:9px 10px;font-size:13px;text-align:center}
 .tbf b{display:block;margin-bottom:3px}
+.tgrow{padding:2px 0}
+.tgreason{color:var(--mut);font-size:13px;padding:0 0 6px 18px}
 
 </style></head><body>
 <header><h1>Big 12 Quadrant Scheduler</h1><p>16 teams, 4 quadrants, 2 divisions, one randomized 12-game mock season.</p></header>
@@ -93,6 +95,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <div class="tbcard"><h3>Real 2026 Big 12 standings</h3>
 <div class="sub2" id="realSrc">Snapshot as of Oct 18, 2026 - conference games set the championship race. Source: <a href="https://www.ncaa.com/standings/football/fbs/big-12" target="_blank" rel="noopener">NCAA.com standings</a>.</div>
 <table id="realTable"><tr><th>#</th><th>Team</th><th>Conf</th><th>Overall</th></tr><tr><td>1</td><td>Utah</td><td>3-0</td><td>6-0</td></tr><tr><td>2</td><td>Texas Tech</td><td>3-0</td><td>6-0</td></tr><tr><td>3</td><td>BYU</td><td>3-0</td><td>6-0</td></tr><tr><td>4</td><td>Houston</td><td>3-1</td><td>6-1</td></tr><tr><td>5</td><td>Arizona</td><td>2-1</td><td>5-1</td></tr><tr><td>6</td><td>Oklahoma State</td><td>2-1</td><td>4-2</td></tr><tr><td>7</td><td>Baylor</td><td>2-1</td><td>4-2</td></tr><tr><td>8</td><td>Kansas State</td><td>1-2</td><td>4-2</td></tr><tr><td>9</td><td>Cincinnati</td><td>1-2</td><td>4-2</td></tr><tr><td>10</td><td>UCF</td><td>1-2</td><td>3-3</td></tr><tr><td>11</td><td>Arizona State</td><td>1-2</td><td>3-3</td></tr><tr><td>12</td><td>Iowa State</td><td>1-2</td><td>3-3</td></tr><tr><td>13</td><td>TCU</td><td>1-2</td><td>3-3</td></tr><tr><td>14</td><td>West Virginia</td><td>1-3</td><td>4-3</td></tr><tr><td>15</td><td>Kansas</td><td>0-3</td><td>2-4</td></tr><tr><td>16</td><td>Colorado</td><td>0-3</td><td>2-4</td></tr></table></div>
+<div id="tbNow"></div>
 <div class="tbcard"><h3>Championship race as of Oct 20</h3>
 <p>Three teams are perfect in conference play at 3-0 - <b>BYU</b>, <b>Texas Tech</b> and <b>Utah</b> - with <b>Houston</b> one game back at 3-1. If any two of the 3-0 teams finish tied, the tiebreakers kick in: head-to-head first (BYU still plays at Utah on Nov 7, so that game could decide a top seed directly), then common opponents, then the walk down the standings. See the Tiebreakers tab for the full official order.</p>
 <p class="tbnote" style="margin-top:8px">Schedules sourced from <a href="https://cfb.app/big12/rankings" target="_blank" rel="noopener">cfb.app</a> and NCAA.com; this snapshot does not update itself, so treat it as a point-in-time view, not a live tracker.</p></div>
@@ -292,10 +295,11 @@ function srcLine(){
  $("simSrc").innerHTML=s+". "+f+".";
  if($("realSrc")){
   if(SD.live){$("realSrc").innerHTML="LIVE standings via ESPN, refreshed on every visit. Conference games set the championship race. Source: <a href='https://www.espn.com/college-football/standings' target='_blank' rel='noopener'>ESPN</a>.";
-   const rows=B12T.slice().sort((x,y)=>SD.rec[y][0]-SD.rec[x][0]||SD.rec[x][1]-SD.rec[y][1]).map((t,i)=>`<tr><td>${i+1}</td><td>${t}</td><td>${SD.rec[t][0]}-${SD.rec[t][1]}</td><td>${SD.rec[t][2]}-${SD.rec[t][3]}</td></tr>`).join("");
+   const rows=tieRankAll().map((t,i)=>`<tr><td>${i+1}</td><td>${t}</td><td>${SD.rec[t][0]}-${SD.rec[t][1]}</td><td>${SD.rec[t][2]}-${SD.rec[t][3]}</td></tr>`).join("");
    $("realTable").innerHTML="<tr><th>#</th><th>Team</th><th>Conf</th><th>Overall</th></tr>"+rows;
   } else {$("realSrc").innerHTML="STATIC SNAPSHOT as of Oct 18, 2026 (ESPN unreachable right now). Source: <a href='https://www.ncaa.com/standings/football/fbs/big-12' target='_blank' rel='noopener'>NCAA.com standings</a>."}
  }
+ renderTieNow();
  metricNote();
 }
 function computeElo(games){
@@ -350,6 +354,75 @@ function topSeeds(fin,g,flags){
   if(seeds.length+grp.length<=2)seeds.push(...tieOrder(grp,g,fin,flags));
   else{seeds.push(...tieOrder(grp,g,fin,flags).slice(0,2-seeds.length));break}}
  return seeds.slice(0,2)}
+
+function curCtx(){const res=SD.done.map(g=>g[3]>g[2]?[g[1],g[0]]:[g[0],g[1]]);const fin={};B12T.forEach(t=>fin[t]=SD.rec[t].slice());return{g:buildCtx(res),fin}}
+function recStr(g,t,opps){const gs=g[t].filter(x=>opps.indexOf(x.opp)>=0);return gs.reduce((s,x)=>s+x.won,0)+"-"+(gs.length-gs.reduce((s,x)=>s+x.won,0))}
+function seedOneX(pool,g,fin){
+ let cand=pool.slice();
+ if(cand.length==2){
+  const a=cand[0],b=cand[1],pa=wpVs(g,a,[b]),pb=wpVs(g,b,[a]);
+  if(pa!=null&&pb!=null&&Math.abs(pa-pb)>1e-9){
+   const w=pa>pb?a:b;
+   const dg=SD.done.find(x=>(x[0]==a&&x[1]==b)||(x[0]==b&&x[1]==a));
+   return{winner:w,mkReason:n=>{let s=`Head-to-head: ${w} beat ${n}`;if(dg){const ws=dg[0]==w?dg[2]:dg[3],ls=dg[0]==w?dg[3]:dg[2];s+=` ${ws}-${ls}`}return s}}}
+ }else{
+  const playedAll=cand.every(t=>cand.every(o=>o==t||g[t].some(x=>x.opp==o)));
+  if(playedAll){
+   const v={};cand.forEach(t=>v[t]=wpVs(g,t,cand.filter(o=>o!=t)));cand=narrow(cand,v);
+   if(cand.length==1){const w=cand[0],rest=pool.filter(t=>t!=w);return{winner:w,mkReason:n=>`Record vs the tied teams: ${w} ${recStr(g,w,rest)}, ${n} ${recStr(g,n,pool.filter(t=>t!=n))}`}}
+  }else{
+   const sweep=cand.find(t=>cand.every(o=>o==t||(g[t].some(x=>x.opp==o)&&g[t].filter(x=>x.opp==o).every(x=>x.won))));
+   if(sweep)return{winner:sweep,mkReason:n=>`${sweep} beat every other team in the tie`}
+  }
+ }
+ for(let step=0;step<4&&cand.length>1;step++){
+  if(step==0){
+   const common=B12T.filter(o=>cand.indexOf(o)<0&&cand.every(t=>g[t].some(x=>x.opp==o)));if(!common.length)continue;
+   const v={};cand.forEach(t=>v[t]=wpVs(g,t,common));const n2=narrow(cand,v);
+   if(n2.length==1){const w=n2[0];return{winner:w,mkReason:n=>`Record vs common conference opponents (${common.join(", ")}): ${w} ${recStr(g,w,common)}, ${n} ${recStr(g,n,common)}`}}
+   cand=n2;
+  }else if(step==1){
+   const pct=t=>fin[t][0]/(fin[t][0]+fin[t][1]);
+   const order=B12T.slice().sort((x,y)=>pct(y)-pct(x));const groups=[];order.forEach(t=>{const gp=groups.find(gr=>Math.abs(pct(gr[0])-pct(t))<1e-9);if(gp)gp.push(t);else groups.push([t])});
+   let resolved=null;
+   for(const grp of groups){
+    const opps=grp.filter(t=>cand.indexOf(t)<0);if(!opps.length)continue;
+    if(!cand.every(t=>g[t].some(x=>opps.indexOf(x.opp)>=0)))continue;
+    const v={};cand.forEach(t=>v[t]=wpVs(g,t,opps));const n2=narrow(cand,v);
+    if(n2.length<cand.length){if(n2.length==1){const w=n2[0],lbl=opps.join(" + ");resolved={winner:w,mkReason:n=>`Record vs the highest-placed common opponent (${lbl}): ${w} ${recStr(g,w,opps)}, ${n} ${recStr(g,n,opps)}`}}cand=n2;break}
+   }
+   if(resolved)return resolved;
+  }else if(step==2){
+   const v={};cand.forEach(t=>{let w2=0,n=0;g[t].forEach(x=>{w2+=fin[x.opp][0];n+=fin[x.opp][0]+fin[x.opp][1]});v[t]=n?w2/n:null});
+   const n2=narrow(cand,v);
+   if(n2.length==1){const w=n2[0];const f=t=>(v[t]*100).toFixed(0)+"%";return{winner:w,mkReason:n=>`Strength of conference schedule: ${w} ${f(w)} vs ${n} ${f(n)}`}}
+   cand=n2;
+  }else{
+   const v={};cand.forEach(t=>v[t]=fin[t][2]);const n2=narrow(cand,v);
+   if(n2.length==1){const w=n2[0];return{winner:w,mkReason:n=>`Total wins this season: ${w} ${fin[w][2]}, ${n} ${fin[n][2]}`}}
+   cand=n2;
+  }
+ }
+ if(cand.length==1)return{winner:cand[0],mkReason:null};
+ const w=cand[Math.random()*cand.length|0];
+ return{winner:w,mkReason:n=>`No on-field separation yet - under the official order this would fall to the SportSource Analytics rating, then a coin toss`}}
+function rankTied(group,g,fin){const out=[],p=group.slice();while(p.length>1){const r=seedOneX(p,g,fin);out.push(r);p.splice(p.indexOf(r.winner),1)}out.push({winner:p[0],mkReason:null});return out}
+function confGroups(){const pct=t=>SD.rec[t][0]/(SD.rec[t][0]+SD.rec[t][1]);const groups=[];B12T.slice().sort((x,y)=>pct(y)-pct(x)||SD.rec[x][1]-SD.rec[y][1]).forEach(t=>{const gr=groups.find(gr=>SD.rec[gr[0]][0]==SD.rec[t][0]&&SD.rec[gr[0]][1]==SD.rec[t][1]);if(gr)gr.push(t);else groups.push([t])});return groups}
+function tieRankAll(){const{g,fin}=curCtx();const out=[];confGroups().forEach(gr=>{if(gr.length<2)out.push(gr[0]);else rankTied(gr,g,fin).forEach(o=>out.push(o.winner))});return out}
+function renderTieNow(){
+ const{g,fin}=curCtx();
+ let html=`<div class="tbcard"><h3>Tiebreaker breakdown right now</h3><div class="sub2">Each group tied on conference record, ordered by the official Big 12 procedure applied to today's results (full rules on the Tiebreakers tab). Informational midseason - nothing is locked until the regular season ends Nov 28.</div>`;
+ confGroups().forEach(gr=>{
+  if(gr.length<2)return;
+  const order=rankTied(gr,g,fin),lbl=`${SD.rec[gr[0]][0]}-${SD.rec[gr[0]][1]}`;
+  html+=`<h4 style="margin:12px 0 4px">Tied at ${lbl}</h4>`;
+  order.forEach((o,i)=>{
+   html+=`<div class="tgrow">${i+1}. <b>${o.winner}</b></div>`;
+   if(o.mkReason)html+=`<div class="tgreason">${o.winner} above ${order[i+1].winner}: ${o.mkReason(order[i+1].winner)}</div>`;
+  })});
+ html+=`</div>`;
+ $("tbNow").innerHTML=html}
+
 let ELO=null;
 $("runsim").onclick=()=>{
  const metric=$("metric").value;ELO=computeElo(SD.allg);
