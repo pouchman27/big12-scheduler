@@ -54,6 +54,12 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 .tbf{background:#232c45;border-radius:9px;padding:9px 10px;font-size:13px;text-align:center}
 .tbf b{display:block;margin-bottom:3px}
 .tgrow{padding:2px 0}
+.gw{cursor:pointer;padding:3px 8px;border-radius:6px;display:inline-block;touch-action:manipulation}
+.gw:hover{background:#2c3858}
+.gw.sel{background:var(--a);color:#111;font-weight:700}
+.gw.sel:hover{background:var(--a)}
+.gline{padding:2px 0}
+.gdate{color:var(--mut);font-size:13px;margin:10px 0 2px;border-top:1px solid #2c3858;padding-top:8px}
 .tgreason{color:var(--mut);font-size:13px;padding:0 0 6px 18px}
 
 </style></head><body>
@@ -63,6 +69,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <button class="p" id="tabSched">Scheduler</button>
 <button id="tabReal">Real Big 12</button>
 <button id="tabSim">Simulator</button>
+<button id="tabWhat">What-if</button>
 <button id="tabTB">Tiebreakers</button>
 </div>
 <div id="schedView">
@@ -113,6 +120,20 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 </div>
 <div class="tbnote" id="metricNote"></div>
 <div id="simOut"></div>
+</div>
+</div>
+<div id="whatView" style="display:none">
+<div class="tbcard"><h3>Single-season what-if simulator</h3>
+<div class="sub2">Every conference game, real results included. Tap a team to set or flip the winner - the standings and the official tiebreakers update live. Remaining games you don't pick simply don't count.</div>
+<div class="bar" style="justify-content:flex-start;margin:8px 0">
+<select id="wMetric"><option value="fpi">ESPN FPI</option><option value="elo">Elo-style (from 2026 results)</option><option value="flip">Coin flip (50/50)</option></select>
+<button id="wAuto">Auto-pick remaining favorites</button>
+<button id="wReset">Reset to real results</button>
+<button id="wShare">Copy scenario link</button>
+</div>
+<div id="wGames"></div>
+<div id="wStand"></div>
+<div id="wTb"></div>
 </div>
 </div>
 <div id="tbView" style="display:none">
@@ -241,8 +262,8 @@ $("redraw").onclick=()=>{const all=shuf(GEO.flatMap(q=>q[1]));Q=Q.map((q,i)=>({n
 sel.onchange=()=>{pairIdx=+sel.value;save();build()};
 
 
-function showTab(v){$("schedView").style.display=v=="s"?"":"none";$("realView").style.display=v=="r"?"":"none";$("simView").style.display=v=="i"?"":"none";$("tbView").style.display=v=="t"?"":"none";$("tabSched").classList.toggle("p",v=="s");$("tabReal").classList.toggle("p",v=="r");$("tabSim").classList.toggle("p",v=="i");$("tabTB").classList.toggle("p",v=="t")}
-$("tabSched").onclick=()=>showTab("s");$("tabReal").onclick=()=>showTab("r");$("tabSim").onclick=()=>showTab("i");$("tabTB").onclick=()=>showTab("t");
+function showTab(v){$("schedView").style.display=v=="s"?"":"none";$("realView").style.display=v=="r"?"":"none";$("simView").style.display=v=="i"?"":"none";$("whatView").style.display=v=="w"?"":"none";$("tbView").style.display=v=="t"?"":"none";$("tabSched").classList.toggle("p",v=="s");$("tabReal").classList.toggle("p",v=="r");$("tabSim").classList.toggle("p",v=="i");$("tabWhat").classList.toggle("p",v=="w");$("tabTB").classList.toggle("p",v=="t");if(v=="w")renderWhatif()}
+$("tabSched").onclick=()=>showTab("s");$("tabReal").onclick=()=>showTab("r");$("tabSim").onclick=()=>showTab("i");$("tabWhat").onclick=()=>showTab("w");$("tabTB").onclick=()=>showTab("t");
 $("share").onclick=()=>{const d=JSON.stringify({Q,pairIdx});const u=location.origin+location.pathname+"#"+btoa(unescape(encodeURIComponent(d)));const done=()=>{$("share").textContent="Link copied";setTimeout(()=>$("share").textContent="Copy share link",1500)};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(done,()=>prompt("Share link:",u));else prompt("Share link:",u)};
 function loadHash(){try{const h=location.hash.slice(1);if(!h)return;const d=JSON.parse(decodeURIComponent(escape(atob(h))));if(!d||!Array.isArray(d.Q)||d.Q.length!=4)return;const flat=d.Q.flatMap(q=>q.teams);if(d.Q.some(q=>q.teams.length!=4)||flat.length!=16||ALL.some(t=>!flat.includes(t)))return;Q=d.Q.map(q=>({name:String(q.name).slice(0,30),teams:q.teams.slice()}));pairIdx=[0,1,2].includes(d.pairIdx)?d.pairIdx:0;save()}catch(e){}}
 $("simmany").onclick=()=>{
@@ -257,8 +278,8 @@ $("simmany").onclick=()=>{
  $("odds").scrollIntoView({behavior:"smooth"})};
 const IDM={"12": "Arizona", "197": "Oklahoma State", "2116": "UCF", "2132": "Cincinnati", "2305": "Kansas", "2306": "Kansas State", "239": "Baylor", "248": "Houston", "252": "BYU", "254": "Utah", "2628": "TCU", "2641": "Texas Tech", "277": "West Virginia", "38": "Colorado", "66": "Iowa State", "9": "Arizona State"};
 const REC_SNAP={"Arizona": [2, 1, 5, 1], "Arizona State": [1, 2, 3, 3], "BYU": [3, 0, 6, 0], "Baylor": [2, 1, 4, 2], "Cincinnati": [1, 2, 4, 2], "Colorado": [0, 3, 2, 4], "Houston": [3, 1, 6, 1], "Iowa State": [1, 2, 3, 3], "Kansas": [0, 3, 2, 4], "Kansas State": [1, 2, 4, 2], "Oklahoma State": [2, 1, 4, 2], "TCU": [1, 2, 3, 3], "Texas Tech": [3, 0, 6, 0], "UCF": [1, 2, 3, 3], "Utah": [3, 0, 6, 0], "West Virginia": [1, 3, 4, 3]};
-const REM_SNAP=[["Texas Tech", "Cincinnati"], ["West Virginia", "TCU"], ["Baylor", "Kansas"], ["BYU", "UCF"], ["Kansas State", "Arizona State"], ["Colorado", "Oklahoma State"], ["Iowa State", "Arizona"], ["Houston", "Utah"], ["Baylor", "UCF"], ["Arizona", "Texas Tech"], ["Kansas State", "Colorado"], ["Arizona State", "BYU"], ["Kansas", "TCU"], ["Utah", "Cincinnati"], ["Oklahoma State", "Iowa State"], ["TCU", "Arizona"], ["BYU", "Utah"], ["West Virginia", "Texas Tech"], ["Cincinnati", "Houston"], ["UCF", "Kansas"], ["Colorado", "Arizona State"], ["Iowa State", "Baylor"], ["Oklahoma State", "Kansas State"], ["Houston", "Colorado"], ["Baylor", "BYU"], ["Texas Tech", "Oklahoma State"], ["Utah", "Arizona"], ["Arizona State", "UCF"], ["Cincinnati", "Iowa State"], ["Kansas", "West Virginia"], ["Kansas State", "TCU"], ["Iowa State", "UCF"], ["BYU", "Kansas"], ["Texas Tech", "Baylor"], ["Utah", "TCU"], ["Houston", "West Virginia"], ["Arizona", "Kansas State"], ["Colorado", "Cincinnati"], ["Oklahoma State", "Arizona State"], ["TCU", "Texas Tech"], ["West Virginia", "Utah"], ["Cincinnati", "BYU"], ["Baylor", "Houston"], ["Arizona State", "Arizona"], ["UCF", "Colorado"], ["Kansas", "Oklahoma State"], ["Kansas State", "Iowa State"]];
-const DONE_SNAP=[["Arizona", "BYU", 17, 28], ["Houston", "Texas Tech", 26, 28], ["Arizona State", "Kansas", 24, 17], ["Utah", "Iowa State", 31, 17], ["Colorado", "Baylor", 13, 23], ["TCU", "UCF", 13, 21], ["Kansas State", "Cincinnati", 26, 31], ["Oklahoma State", "West Virginia", 41, 24], ["BYU", "TCU", 17, 10], ["Texas Tech", "Colorado", 29, 7], ["UCF", "Houston", 17, 27], ["West Virginia", "Iowa State", 42, 45], ["Baylor", "Arizona State", 55, 19], ["Cincinnati", "Arizona", 7, 34], ["Iowa State", "BYU", 10, 24], ["Kansas", "Utah", 24, 41], ["UCF", "Oklahoma State", 28, 42], ["Houston", "Kansas State", 35, 16], ["Arizona", "West Virginia", 52, 31], ["Arizona State", "Texas Tech", 25, 53], ["Utah", "Colorado", 27, 24], ["Oklahoma State", "Houston", 32, 35], ["Cincinnati", "West Virginia", 42, 45], ["Kansas", "Kansas State", 24, 35], ["TCU", "Baylor", 17, 6]];
+const REM_SNAP=[["Texas Tech", "Cincinnati", "2026-10-24"], ["West Virginia", "TCU", "2026-10-24"], ["Baylor", "Kansas", "2026-10-24"], ["BYU", "UCF", "2026-10-24"], ["Kansas State", "Arizona State", "2026-10-24"], ["Colorado", "Oklahoma State", "2026-10-24"], ["Iowa State", "Arizona", "2026-10-24"], ["Houston", "Utah", "2026-10-25"], ["Baylor", "UCF", "2026-10-30"], ["Arizona", "Texas Tech", "2026-10-31"], ["Kansas State", "Colorado", "2026-10-31"], ["Arizona State", "BYU", "2026-10-31"], ["Kansas", "TCU", "2026-10-31"], ["Utah", "Cincinnati", "2026-10-31"], ["Oklahoma State", "Iowa State", "2026-10-31"], ["TCU", "Arizona", "2026-11-07"], ["BYU", "Utah", "2026-11-07"], ["West Virginia", "Texas Tech", "2026-11-07"], ["Cincinnati", "Houston", "2026-11-07"], ["UCF", "Kansas", "2026-11-07"], ["Colorado", "Arizona State", "2026-11-07"], ["Iowa State", "Baylor", "2026-11-07"], ["Oklahoma State", "Kansas State", "2026-11-07"], ["Houston", "Colorado", "2026-11-14"], ["Baylor", "BYU", "2026-11-14"], ["Texas Tech", "Oklahoma State", "2026-11-14"], ["Utah", "Arizona", "2026-11-14"], ["Arizona State", "UCF", "2026-11-14"], ["Cincinnati", "Iowa State", "2026-11-14"], ["Kansas", "West Virginia", "2026-11-14"], ["Kansas State", "TCU", "2026-11-14"], ["Iowa State", "UCF", "2026-11-20"], ["BYU", "Kansas", "2026-11-21"], ["Texas Tech", "Baylor", "2026-11-21"], ["Utah", "TCU", "2026-11-21"], ["Houston", "West Virginia", "2026-11-21"], ["Arizona", "Kansas State", "2026-11-21"], ["Colorado", "Cincinnati", "2026-11-21"], ["Oklahoma State", "Arizona State", "2026-11-21"], ["TCU", "Texas Tech", "2026-11-27"], ["West Virginia", "Utah", "2026-11-28"], ["Cincinnati", "BYU", "2026-11-28"], ["Baylor", "Houston", "2026-11-28"], ["Arizona State", "Arizona", "2026-11-28"], ["UCF", "Colorado", "2026-11-28"], ["Kansas", "Oklahoma State", "2026-11-28"], ["Kansas State", "Iowa State", "2026-11-28"]];
+const DONE_SNAP=[["Arizona", "BYU", 17, 28, "2026-09-12"], ["Houston", "Texas Tech", 26, 28, "2026-09-19"], ["Arizona State", "Kansas", 24, 17, "2026-09-19"], ["Colorado", "Baylor", 13, 23, "2026-09-26"], ["Utah", "Iowa State", 31, 17, "2026-09-26"], ["TCU", "UCF", 13, 21, "2026-09-26"], ["Kansas State", "Cincinnati", 26, 31, "2026-09-26"], ["Oklahoma State", "West Virginia", 41, 24, "2026-09-26"], ["UCF", "Houston", 17, 27, "2026-10-03"], ["West Virginia", "Iowa State", 42, 45, "2026-10-03"], ["BYU", "TCU", 17, 10, "2026-10-03"], ["Texas Tech", "Colorado", 29, 7, "2026-10-03"], ["Baylor", "Arizona State", 55, 19, "2026-10-04"], ["Cincinnati", "Arizona", 7, 34, "2026-10-04"], ["Iowa State", "BYU", 10, 24, "2026-10-10"], ["UCF", "Oklahoma State", 28, 42, "2026-10-10"], ["Arizona", "West Virginia", 52, 31, "2026-10-10"], ["Houston", "Kansas State", 35, 16, "2026-10-10"], ["Kansas", "Utah", 24, 41, "2026-10-11"], ["Cincinnati", "West Virginia", 42, 45, "2026-10-17"], ["Kansas", "Kansas State", 24, 35, "2026-10-17"], ["Arizona State", "Texas Tech", 25, 53, "2026-10-17"], ["TCU", "Baylor", 17, 6, "2026-10-17"], ["Oklahoma State", "Houston", 32, 35, "2026-10-17"], ["Utah", "Colorado", 27, 24, "2026-10-18"]];
 const ALLG_SNAP=[["2628", "153", 10, 15], ["2116", "2065", 73, 6], ["59", "38", 13, 14], ["254", "70", 66, 14], ["2305", "2341", 51, 6], ["248", "204", 33, 20], ["277", "324", 31, 24], ["66", "2546", 38, 10], ["2", "239", 17, 16], ["2132", "103", 34, 15], ["202", "197", 24, 10], ["2641", "2000", 33, 10], ["2306", "2447", 71, 3], ["252", "3101", 63, 7], ["12", "2464", 35, 7], ["9", "2415", 70, 7], ["2305", "142", 21, 38], ["245", "9", 48, 20], ["2306", "265", 34, 7], ["277", "2630", 52, 7], ["197", "2483", 39, 31], ["252", "12", 28, 17], ["38", "2692", 52, 21], ["221", "2116", 12, 7], ["248", "2582", 77, 6], ["2132", "2717", 62, 10], ["204", "2641", 24, 35], ["2294", "66", 16, 13], ["2628", "2755", 63, 7], ["239", "2504", 44, 3], ["254", "8", 43, 10], ["2641", "248", 28, 26], ["2306", "2655", 31, 20], ["66", "189", 55, 7], ["2305", "9", 17, 24], ["254", "328", 33, 0], ["2132", "193", 35, 31], ["239", "2348", 36, 19], ["2116", "2247", 44, 30], ["197", "93", 59, 0], ["258", "277", 27, 38], ["77", "38", 41, 7], ["2628", "2032", 31, 7], ["36", "252", 23, 41], ["12", "2459", 42, 17], ["2641", "2534", 49, 14], ["239", "38", 23, 13], ["66", "254", 17, 31], ["2116", "2628", 21, 13], ["290", "248", 28, 42], ["2132", "2306", 31, 26], ["277", "197", 24, 41], ["265", "12", 24, 34], ["248", "2116", 27, 17], ["2305", "2393", 55, 0], ["66", "277", 45, 42], ["2628", "252", 10, 17], ["38", "2641", 7, 29], ["9", "239", 19, 55], ["12", "2132", 34, 7], ["252", "66", 24, 10], ["197", "2116", 42, 28], ["277", "12", 31, 52], ["2306", "248", 16, 35], ["254", "2305", 41, 24], ["9", "62", 30, 12], ["277", "2132", 45, 42], ["2306", "2305", 35, 24], ["2641", "9", 53, 25], ["239", "2628", 6, 17], ["252", "87", 28, 24], ["248", "197", 35, 32], ["38", "254", 24, 27]];
 const FPI_SNAP={"Arizona": 10.5, "Arizona State": -1.3, "BYU": 17.4, "Baylor": 10.0, "Cincinnati": 3.5, "Colorado": 1.0, "Houston": 14.8, "Iowa State": 4.3, "Kansas": 3.7, "Kansas State": 7.6, "Oklahoma State": 9.0, "TCU": 8.6, "Texas Tech": 19.4, "UCF": 5.2, "Utah": 17.4, "West Virginia": 0.4};
 
@@ -273,9 +294,9 @@ function parseSeason(evts){
   if(e.status.type.completed){
    const hs=+home.score||0,as=+away.score||0;
    if(h){rec[h][2]+=hs>as;rec[h][3]+=hs<as}if(a){rec[a][2]+=as>hs;rec[a][3]+=as<hs}
-   if(conf&&h&&a){rec[h][0]+=hs>as;rec[h][1]+=hs<as;rec[a][0]+=as>hs;rec[a][1]+=as<hs;done.push([a,h,as,hs])}
+   if(conf&&h&&a){rec[h][0]+=hs>as;rec[h][1]+=hs<as;rec[a][0]+=as>hs;rec[a][1]+=as<hs;done.push([a,h,as,hs,e.date.slice(0,10)])}
    allg.push([home.team.id,away.team.id,hs,as]);
-  }else if(conf&&h&&a)rem.push([a,h]);
+  }else if(conf&&h&&a)rem.push([a,h,e.date.slice(0,10)]);
  });return{rec,rem,done,allg}}
 async function loadSimData(){
  try{
@@ -300,6 +321,7 @@ function srcLine(){
   } else {$("realSrc").innerHTML="STATIC SNAPSHOT as of Oct 18, 2026 (ESPN unreachable right now). Source: <a href='https://www.ncaa.com/standings/football/fbs/big-12' target='_blank' rel='noopener'>NCAA.com standings</a>."}
  }
  renderTieNow();
+ renderWhatif();
  metricNote();
 }
 function computeElo(games){
@@ -363,8 +385,8 @@ function seedOneX(pool,g,fin){
   const a=cand[0],b=cand[1],pa=wpVs(g,a,[b]),pb=wpVs(g,b,[a]);
   if(pa!=null&&pb!=null&&Math.abs(pa-pb)>1e-9){
    const w=pa>pb?a:b;
-   const dg=SD.done.find(x=>(x[0]==a&&x[1]==b)||(x[0]==b&&x[1]==a));
-   return{winner:w,mkReason:n=>{let s=`Head-to-head: ${w} beat ${n}`;if(dg){const ws=dg[0]==w?dg[2]:dg[3],ls=dg[0]==w?dg[3]:dg[2];s+=` ${ws}-${ls}`}return s}}}
+   const dg=(window.__done||SD.done).find(x=>(x[0]==a&&x[1]==b)||(x[0]==b&&x[1]==a));
+   return{winner:w,mkReason:n=>{let s=`Head-to-head: ${w} beat ${n}`;if(dg&&dg[2]!=null){const ws=dg[0]==w?dg[2]:dg[3],ls=dg[0]==w?dg[3]:dg[2];s+=` ${ws}-${ls}`}return s}}}
  }else{
   const playedAll=cand.every(t=>cand.every(o=>o==t||g[t].some(x=>x.opp==o)));
   if(playedAll){
@@ -407,21 +429,58 @@ function seedOneX(pool,g,fin){
  const w=cand[Math.random()*cand.length|0];
  return{winner:w,mkReason:n=>`No on-field separation yet - under the official order this would fall to the SportSource Analytics rating, then a coin toss`}}
 function rankTied(group,g,fin){const out=[],p=group.slice();while(p.length>1){const r=seedOneX(p,g,fin);out.push(r);p.splice(p.indexOf(r.winner),1)}out.push({winner:p[0],mkReason:null});return out}
-function confGroups(){const pct=t=>SD.rec[t][0]/(SD.rec[t][0]+SD.rec[t][1]);const groups=[];B12T.slice().sort((x,y)=>pct(y)-pct(x)||SD.rec[x][1]-SD.rec[y][1]).forEach(t=>{const gr=groups.find(gr=>SD.rec[gr[0]][0]==SD.rec[t][0]&&SD.rec[gr[0]][1]==SD.rec[t][1]);if(gr)gr.push(t);else groups.push([t])});return groups}
+function confGroups(rec){rec=rec||SD.rec;const pct=t=>rec[t][0]/(rec[t][0]+rec[t][1]);const groups=[];B12T.slice().sort((x,y)=>pct(y)-pct(x)||rec[x][1]-rec[y][1]).forEach(t=>{const gr=groups.find(gr=>rec[gr[0]][0]==rec[t][0]&&rec[gr[0]][1]==rec[t][1]);if(gr)gr.push(t);else groups.push([t])});return groups}
 function tieRankAll(){const{g,fin}=curCtx();const out=[];confGroups().forEach(gr=>{if(gr.length<2)out.push(gr[0]);else rankTied(gr,g,fin).forEach(o=>out.push(o.winner))});return out}
 function renderTieNow(){
  const{g,fin}=curCtx();
- let html=`<div class="tbcard"><h3>Tiebreaker breakdown right now</h3><div class="sub2">Each group tied on conference record, ordered by the official Big 12 procedure applied to today's results (full rules on the Tiebreakers tab). Informational midseason - nothing is locked until the regular season ends Nov 28.</div>`;
- confGroups().forEach(gr=>{
+ $("tbNow").innerHTML=tbHTML(SD.rec,g,fin,"today's results","Tiebreaker breakdown right now")}
+function tbHTML(rec,g,fin,ctxLabel,title){
+ let html=`<div class="tbcard"><h3>${title}</h3><div class="sub2">Each group tied on conference record, ordered by the official Big 12 procedure applied to ${ctxLabel} (full rules on the Tiebreakers tab). Informational midseason - nothing is locked until the regular season ends Nov 28.</div>`;
+ confGroups(rec).forEach(gr=>{
   if(gr.length<2)return;
-  const order=rankTied(gr,g,fin),lbl=`${SD.rec[gr[0]][0]}-${SD.rec[gr[0]][1]}`;
+  const order=rankTied(gr,g,fin),lbl=`${rec[gr[0]][0]}-${rec[gr[0]][1]}`;
   html+=`<h4 style="margin:12px 0 4px">Tied at ${lbl}</h4>`;
   order.forEach((o,i)=>{
    html+=`<div class="tgrow">${i+1}. <b>${o.winner}</b></div>`;
    if(o.mkReason)html+=`<div class="tgreason">${o.winner} above ${order[i+1].winner}: ${o.mkReason(order[i+1].winner)}</div>`;
   })});
  html+=`</div>`;
- $("tbNow").innerHTML=html}
+ return html}
+
+
+let SC={picks:{}};
+const MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fmtD(d){if(!d)return"";const p=d.split("-");return MN[+p[1]-1]+" "+(+p[2])}
+function allGames(){return SD.done.map((g,i)=>({id:"d"+i,a:g[0],h:g[1],as:g[2],hs:g[3],date:g[4]||"",played:true})).concat(SD.rem.map((g,i)=>({id:"r"+i,a:g[0],h:g[1],date:g[2]||"",played:false})))}
+function renderWhatif(){
+ const games=allGames(),picks=SC.picks,win={};
+ games.forEach(gm=>{if(gm.played)win[gm.id]=picks[gm.id]||(gm.hs>gm.as?gm.h:gm.a);else if(picks[gm.id])win[gm.id]=picks[gm.id]});
+ const rec={};B12T.forEach(t=>rec[t]=[0,0,0,0]);const res=[];
+ games.forEach(gm=>{const w=win[gm.id];if(!w)return;const l=w==gm.h?gm.a:gm.h;rec[w][0]++;rec[l][1]++;res.push([w,l])});
+ B12T.forEach(t=>{rec[t][2]=SD.rec[t][2]-SD.rec[t][0]+rec[t][0];rec[t][3]=SD.rec[t][3]-SD.rec[t][1]+rec[t][1]});
+ const g=buildCtx(res),fin=rec;
+ let html="",last="";
+ games.forEach(gm=>{
+  if(gm.date!=last){html+=`<div class="gdate">${fmtD(gm.date)}${gm.played?"":" &middot; upcoming"}</div>`;last=gm.date}
+  const w=win[gm.id],sc=gm.played?` <span class="sc">${gm.as}-${gm.hs}</span>`:"";
+  html+=`<div class="gline"><span class="gw${w==gm.a?" sel":""}" data-g="${gm.id}" data-t="${gm.a}">${gm.a}</span> at <span class="gw${w==gm.h?" sel":""}" data-g="${gm.id}" data-t="${gm.h}">${gm.h}</span>${sc}</div>`});
+ $("wGames").innerHTML=html;
+ document.querySelectorAll("#wGames .gw").forEach(el=>{el.onclick=()=>{
+  const id=el.dataset.g,t=el.dataset.t,gm=games.find(x=>x.id==id);
+  if(gm.played){const actual=gm.hs>gm.as?gm.h:gm.a,cur=SC.picks[id]||actual;
+   if(t==cur){if(t!=actual)delete SC.picks[id]}else SC.picks[id]=t;
+  }else{if(SC.picks[id]==t)delete SC.picks[id];else SC.picks[id]=t}
+  renderWhatif()}});
+ const unpicked=games.filter(gm=>!gm.played&&!win[gm.id]).length;
+ const order=[];confGroups(rec).forEach(gr=>{if(gr.length<2)order.push(gr[0]);else rankTied(gr,g,fin).forEach(o=>order.push(o.winner))});
+ $("wStand").innerHTML=`<h2 class="s">Scenario standings${unpicked?` <small style="color:var(--mut);font-size:13px">(${unpicked} remaining game${unpicked==1?"":"s"} unpicked)</small>`:""}</h2><table><tr><th>#</th><th>Team</th><th>Conf</th><th>Overall</th></tr>${order.map((t,i)=>`<tr><td>${i+1}</td><td>${t}</td><td>${rec[t][0]}-${rec[t][1]}</td><td>${rec[t][2]}-${rec[t][3]}</td></tr>`).join("")}</table>`;
+ window.__done=games.filter(gm=>gm.played).map(gm=>{const actual=gm.hs>gm.as?gm.h:gm.a;return win[gm.id]==actual?[gm.a,gm.h,gm.as,gm.hs]:[gm.a,gm.h,null,null]});
+ $("wTb").innerHTML=tbHTML(rec,g,fin,"this scenario","Scenario tiebreakers");
+ window.__done=null}
+$("wReset").onclick=()=>{SC={picks:{}};renderWhatif()};
+$("wAuto").onclick=()=>{const m=$("wMetric").value;if(m=="elo"&&!window.__elo)window.__elo=computeElo(SD.allg);const E=window.__elo;SD.rem.forEach((gm,i)=>{const p=m=="flip"?.5:m=="fpi"?1/(1+Math.exp(-((SD.fpi[gm[1]]-SD.fpi[gm[0]])+2.5)/12)):1/(1+Math.pow(10,-((E[gm[1]]-E[gm[0]])+65)/400));SC.picks["r"+i]=p>=.5?gm[1]:gm[0]});renderWhatif()};
+$("wShare").onclick=()=>{const u=location.origin+location.pathname+"#sc="+btoa(unescape(encodeURIComponent(JSON.stringify(SC.picks))));const done=()=>{$("wShare").textContent="Link copied";setTimeout(()=>$("wShare").textContent="Copy scenario link",1500)};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(done,()=>prompt("Share link:",u));else prompt("Share link:",u)};
+function loadScenario(){try{const h=location.hash.slice(1);if(!h.startsWith("sc="))return false;SC={picks:JSON.parse(decodeURIComponent(escape(atob(h.slice(3)))))||{}};showTab("w");return true}catch(e){return false}}
 
 let ELO=null;
 $("runsim").onclick=()=>{
@@ -449,5 +508,5 @@ $("runsim").onclick=()=>{
  $("simOut").scrollIntoView({behavior:"smooth"})};
 
 $("metric").onchange=metricNote;loadSimData();
-loadHash();load();fillSel();build();
+loadScenario();loadHash();load();fillSel();build();
 </script></body></html>
