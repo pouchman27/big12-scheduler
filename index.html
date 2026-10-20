@@ -61,16 +61,15 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 .gline{padding:2px 0}
 .gdate{color:var(--mut);font-size:13px;margin:10px 0 2px;border-top:1px solid #2c3858;padding-top:8px}
 .tgreason{color:var(--mut);font-size:13px;padding:0 0 6px 18px}
+.xl{background:var(--card);color:var(--ink);border:1px solid #2c3858;border-radius:9px;padding:10px 14px;font:inherit;text-decoration:none;display:inline-block}.xl:hover{filter:brightness(1.15)}
 
 </style></head><body>
 <header><h1>Big 12 Quadrant Scheduler</h1><p>16 teams, 4 quadrants, 2 divisions, one randomized 12-game mock season.</p></header>
+<script>if(location.hash.slice(0,4)=="#sc=")location.replace("https://pouchman27.github.io/big12-standings/"+location.hash)</script>
 <main>
 <div class="bar tabs">
 <button class="p" id="tabSched">Scheduler</button>
-<button id="tabReal">Real Big 12</button>
-<button id="tabSim">Simulator</button>
-<button id="tabWhat">What-if</button>
-<button id="tabTB">Tiebreakers</button>
+<a class="xl" href="https://pouchman27.github.io/big12-standings/">Standings &amp; Scenarios &#8594;</a>
 </div>
 <div id="schedView">
 <div class="bar">
@@ -134,6 +133,20 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <div id="wGames"></div>
 <div id="wStand"></div>
 <div id="wTb"></div>
+</div>
+</div>
+<div id="runView" style="display:none">
+<div class="tbcard"><h3>Run scenario - full-season projection</h3>
+<div class="sub2">One click picks the favorite in every remaining game and projects the final 12-game standings with the official tiebreakers applied. Every non-conference game is already in the books, so the Overall column is a true final record. Tap any predicted game to flip it - the standings and reasons update live.</div>
+<div class="bar" style="justify-content:flex-start;margin:8px 0">
+<select id="rMetric"><option value="fpi">ESPN FPI</option><option value="elo">Elo-style (from 2026 results)</option><option value="flip">Coin flip (50/50)</option></select>
+<button id="rRun">Run full season</button>
+<button id="rReset">Reset picks</button>
+</div>
+<div id="rOut"></div>
+<div id="rGames"></div>
+<div id="rStand"></div>
+<div id="rTb"></div>
 </div>
 </div>
 <div id="tbView" style="display:none">
@@ -262,8 +275,8 @@ $("redraw").onclick=()=>{const all=shuf(GEO.flatMap(q=>q[1]));Q=Q.map((q,i)=>({n
 sel.onchange=()=>{pairIdx=+sel.value;save();build()};
 
 
-function showTab(v){$("schedView").style.display=v=="s"?"":"none";$("realView").style.display=v=="r"?"":"none";$("simView").style.display=v=="i"?"":"none";$("whatView").style.display=v=="w"?"":"none";$("tbView").style.display=v=="t"?"":"none";$("tabSched").classList.toggle("p",v=="s");$("tabReal").classList.toggle("p",v=="r");$("tabSim").classList.toggle("p",v=="i");$("tabWhat").classList.toggle("p",v=="w");$("tabTB").classList.toggle("p",v=="t");if(v=="w")renderWhatif()}
-$("tabSched").onclick=()=>showTab("s");$("tabReal").onclick=()=>showTab("r");$("tabSim").onclick=()=>showTab("i");$("tabWhat").onclick=()=>showTab("w");$("tabTB").onclick=()=>showTab("t");
+function showTab(v){$("schedView").style.display=v=="s"?"":"none";$("realView").style.display=v=="r"?"":"none";$("simView").style.display=v=="i"?"":"none";$("whatView").style.display=v=="w"?"":"none";$("runView").style.display=v=="n"?"":"none";$("tbView").style.display=v=="t"?"":"none";$("tabSched").classList.toggle("p",v=="s");$("tabReal").classList.toggle("p",v=="r");$("tabSim").classList.toggle("p",v=="i");$("tabWhat").classList.toggle("p",v=="w");$("tabRun").classList.toggle("p",v=="n");$("tabTB").classList.toggle("p",v=="t");if(v=="w")renderWhatif();if(v=="n")renderRun()}
+$("tabSched").onclick=()=>showTab("s");
 $("share").onclick=()=>{const d=JSON.stringify({Q,pairIdx});const u=location.origin+location.pathname+"#"+btoa(unescape(encodeURIComponent(d)));const done=()=>{$("share").textContent="Link copied";setTimeout(()=>$("share").textContent="Copy share link",1500)};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(done,()=>prompt("Share link:",u));else prompt("Share link:",u)};
 function loadHash(){try{const h=location.hash.slice(1);if(!h)return;const d=JSON.parse(decodeURIComponent(escape(atob(h))));if(!d||!Array.isArray(d.Q)||d.Q.length!=4)return;const flat=d.Q.flatMap(q=>q.teams);if(d.Q.some(q=>q.teams.length!=4)||flat.length!=16||ALL.some(t=>!flat.includes(t)))return;Q=d.Q.map(q=>({name:String(q.name).slice(0,30),teams:q.teams.slice()}));pairIdx=[0,1,2].includes(d.pairIdx)?d.pairIdx:0;save()}catch(e){}}
 $("simmany").onclick=()=>{
@@ -322,6 +335,7 @@ function srcLine(){
  }
  renderTieNow();
  renderWhatif();
+ if(RS)renderRun();
  metricNote();
 }
 function computeElo(games){
@@ -481,6 +495,44 @@ $("wReset").onclick=()=>{SC={picks:{}};renderWhatif()};
 $("wAuto").onclick=()=>{const m=$("wMetric").value;if(m=="elo"&&!window.__elo)window.__elo=computeElo(SD.allg);const E=window.__elo;SD.rem.forEach((gm,i)=>{const p=m=="flip"?.5:m=="fpi"?1/(1+Math.exp(-((SD.fpi[gm[1]]-SD.fpi[gm[0]])+2.5)/12)):1/(1+Math.pow(10,-((E[gm[1]]-E[gm[0]])+65)/400));SC.picks["r"+i]=p>=.5?gm[1]:gm[0]});renderWhatif()};
 $("wShare").onclick=()=>{const u=location.origin+location.pathname+"#sc="+btoa(unescape(encodeURIComponent(JSON.stringify(SC.picks))));const done=()=>{$("wShare").textContent="Link copied";setTimeout(()=>$("wShare").textContent="Copy scenario link",1500)};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(done,()=>prompt("Share link:",u));else prompt("Share link:",u)};
 function loadScenario(){try{const h=location.hash.slice(1);if(!h.startsWith("sc="))return false;SC={picks:JSON.parse(decodeURIComponent(escape(atob(h.slice(3)))))||{}};showTab("w");return true}catch(e){return false}}
+
+// ---- run scenario tab: deterministic full-season projection ----
+let RS=null;
+function runProb(m,h,a){
+ if(m=="flip")return .5;
+ if(m=="fpi")return 1/(1+Math.exp(-((SD.fpi[h]-SD.fpi[a])+2.5)/12));
+ if(!window.__elo)window.__elo=computeElo(SD.allg);
+ return 1/(1+Math.pow(10,-((window.__elo[h]-window.__elo[a])+65)/400))}
+function renderRun(){
+ if(!RS){$("rOut").innerHTML='<div class="sub2">Pick a metric and hit <b>Run full season</b>.</div>';$("rGames").innerHTML="";$("rStand").innerHTML="";$("rTb").innerHTML="";return}
+ const m=RS.metric,mname=m=="fpi"?"ESPN FPI":m=="elo"?"Elo (2026 results)":"50/50 coin flip";
+ const srctag=m=="fpi"?(SD.fpiLive?"live FPI, updated "+SD.fpiUpdated:"static FPI snapshot from Oct 20, 2026"):(SD.live?"live ESPN results":"static snapshot from Oct 20, 2026");
+ const games=SD.rem.map((g,i)=>({id:"r"+i,a:g[0],h:g[1],date:g[2]||""}));
+ const rec={};B12T.forEach(t=>rec[t]=SD.rec[t].slice());
+ const res=SD.done.map(g=>g[3]>g[2]?[g[1],g[0]]:[g[0],g[1]]);
+ games.forEach(gm=>{const w=RS.picks[gm.id];if(!w)return;const l=w==gm.h?gm.a:gm.h;rec[w][0]++;rec[w][2]++;rec[l][1]++;rec[l][3]++;res.push([w,l])});
+ const g=buildCtx(res),fin=rec;
+ const unpicked=games.filter(gm=>!RS.picks[gm.id]).length;
+ $("rOut").innerHTML=`<div class="sub2">Favorites picked by <b>${mname}</b> (${srctag}). ${unpicked?unpicked+" game"+(unpicked==1?" is":"s are")+" unpicked - tap a team below to pick or flip.":"All "+games.length+" remaining games picked - tap any game to flip it."}</div>`;
+ let html="",last="";
+ games.forEach(gm=>{
+  if(gm.date!=last){html+=`<div class="gdate">${fmtD(gm.date)}</div>`;last=gm.date}
+  const w=RS.picks[gm.id];
+  html+=`<div class="gline"><span class="gw${w==gm.a?" sel":""}" data-g="${gm.id}" data-t="${gm.a}">${gm.a}</span> at <span class="gw${w==gm.h?" sel":""}" data-g="${gm.id}" data-t="${gm.h}">${gm.h}</span></div>`});
+ $("rGames").innerHTML='<h2 class="s">Predicted remaining games</h2>'+html;
+ document.querySelectorAll("#rGames .gw").forEach(el=>{el.onclick=()=>{
+  const id=el.dataset.g,t=el.dataset.t;
+  if(RS.picks[id]==t)delete RS.picks[id];else RS.picks[id]=t;
+  renderRun()}});
+ const order=[];confGroups(rec).forEach(gr=>{if(gr.length<2)order.push(gr[0]);else rankTied(gr,g,fin).forEach(o=>order.push(o.winner))});
+ let champ="";
+ if(!unpicked&&order.length>1){
+  const p=runProb(m,order[0],order[1])||.5,fav=p>=.5?order[0]:order[1],pct=Math.round(100*Math.max(p,1-p));
+  champ=`<div class="sub2" style="margin-top:6px">Projected championship game, Dec 5: <b>${order[0]} vs ${order[1]}</b> - ${mname} favors ${fav} at about ${pct}% on a neutral field.</div>`}
+ $("rStand").innerHTML=`<h2 class="s">Final standings - full 12-game season</h2><table><tr><th>#</th><th>Team</th><th>Conf</th><th>Overall</th></tr>${order.map((t,i)=>`<tr><td>${i+1}</td><td>${t}</td><td>${rec[t][0]}-${rec[t][1]}</td><td>${rec[t][2]}-${rec[t][3]}</td></tr>`).join("")}</table>${champ}`;
+ $("rTb").innerHTML=tbHTML(rec,g,fin,"this full-season scenario","Scenario tiebreakers")}
+$("rRun").onclick=()=>{const m=$("rMetric").value;RS={metric:m,picks:{}};SD.rem.forEach((gm,i)=>{const p=runProb(m,gm[1],gm[0]);RS.picks["r"+i]=p>=.5?gm[1]:gm[0]});renderRun()};
+$("rReset").onclick=()=>{RS=null;renderRun()};
 
 let ELO=null;
 $("runsim").onclick=()=>{
