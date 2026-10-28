@@ -63,7 +63,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 .tgreason{color:var(--mut);font-size:13px;padding:0 0 6px 18px}
 .xl{background:var(--card);color:var(--ink);border:1px solid #2c3858;border-radius:9px;padding:10px 14px;font:inherit;text-decoration:none;display:inline-block}.xl:hover{filter:brightness(1.15)}
 
-#burger{display:none;font-size:20px;padding:8px 14px}
+#burger{display:none;font-size:20px;padding:8px 14px;position:relative;z-index:60}
 @media(max-width:760px){
  #burger{display:block;margin:0 auto}
  .bar.tabs{display:none;flex-direction:column;position:absolute;left:12px;right:12px;top:48px;background:var(--card);border:1px solid #2c3858;border-radius:12px;padding:10px;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.5)}
@@ -74,7 +74,7 @@ table{width:100%;border-collapse:collapse}td,th{padding:4px 6px;text-align:left}
 <header><h1>Big 12 Quadrant Scheduler</h1><p>16 teams, 4 quadrants, 2 divisions, one randomized 12-game mock season.</p></header>
 <script>if(location.hash.slice(0,4)=="#sc=")location.replace("https://pouchman27.github.io/big12-standings/"+location.hash)</script>
 <main>
-<button id="burger" aria-label="Open menu">&#9776; Menu</button>
+<button id="burger" aria-label="Menu" aria-expanded="false" aria-controls="tabs">&#9776; Menu</button>
 <div class="bar tabs" id="tabs">
 <button class="p" id="tabSched">Scheduler</button>
 <a class="xl" href="https://pouchman27.github.io/big12-standings/">Standings &amp; Scenarios &#8594;</a>
@@ -283,8 +283,8 @@ $("redraw").onclick=()=>{const all=shuf(GEO.flatMap(q=>q[1]));Q=Q.map((q,i)=>({n
 sel.onchange=()=>{pairIdx=+sel.value;save();build()};
 
 
-function showTab(v){$("schedView").style.display=v=="s"?"":"none";$("realView").style.display=v=="r"?"":"none";$("simView").style.display=v=="i"?"":"none";$("whatView").style.display=v=="w"?"":"none";$("runView").style.display=v=="n"?"":"none";$("tbView").style.display=v=="t"?"":"none";$("tabSched").classList.toggle("p",v=="s");$("tabReal").classList.toggle("p",v=="r");$("tabSim").classList.toggle("p",v=="i");$("tabWhat").classList.toggle("p",v=="w");$("tabRun").classList.toggle("p",v=="n");$("tabTB").classList.toggle("p",v=="t");if(v=="w")renderWhatif();if(v=="n")renderRun();const _tb=$("tabs");_tb&&_tb.classList.remove("open")}
-$("tabSched").onclick=()=>showTab("s");$("burger").onclick=()=>$("tabs").classList.toggle("open");
+function showTab(v){$("schedView").style.display=v=="s"?"":"none";$("realView").style.display=v=="r"?"":"none";$("simView").style.display=v=="i"?"":"none";$("whatView").style.display=v=="w"?"":"none";$("runView").style.display=v=="n"?"":"none";$("tbView").style.display=v=="t"?"":"none";$("tabSched").classList.toggle("p",v=="s");$("tabReal").classList.toggle("p",v=="r");$("tabSim").classList.toggle("p",v=="i");$("tabWhat").classList.toggle("p",v=="w");$("tabRun").classList.toggle("p",v=="n");$("tabTB").classList.toggle("p",v=="t");if(v=="w")renderWhatif();if(v=="n")renderRun();const _tb=$("tabs");if(_tb){_tb.classList.remove("open");const _b=$("burger");if(_b){_b.setAttribute("aria-expanded","false");_b.innerHTML="&#9776; Menu"}}}
+$("tabSched").onclick=()=>showTab("s");$("burger").onclick=()=>{const t=$("tabs"),open=t.classList.toggle("open");const b=$("burger");b.setAttribute("aria-expanded",open?"true":"false");b.innerHTML=open?"&#10005; Close":"&#9776; Menu"};
 $("share").onclick=()=>{const d=JSON.stringify({Q,pairIdx});const u=location.origin+location.pathname+"#"+btoa(unescape(encodeURIComponent(d)));const done=()=>{$("share").textContent="Link copied";setTimeout(()=>$("share").textContent="Copy share link",1500)};if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(done,()=>prompt("Share link:",u));else prompt("Share link:",u)};
 function loadHash(){try{const h=location.hash.slice(1);if(!h)return;const d=JSON.parse(decodeURIComponent(escape(atob(h))));if(!d||!Array.isArray(d.Q)||d.Q.length!=4)return;const flat=d.Q.flatMap(q=>q.teams);if(d.Q.some(q=>q.teams.length!=4)||flat.length!=16||ALL.some(t=>!flat.includes(t)))return;Q=d.Q.map(q=>({name:String(q.name).slice(0,30),teams:q.teams.slice()}));pairIdx=[0,1,2].includes(d.pairIdx)?d.pairIdx:0;save()}catch(e){}}
 $("simmany").onclick=()=>{
